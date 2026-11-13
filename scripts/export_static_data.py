@@ -13,7 +13,7 @@ import re
 import shutil
 import sqlite3
 import sys
-from datetime import date
+from datetime import date, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,8 +30,9 @@ SITE_DIR = ROOT / "site"
 ASSET_DIR = SITE_DIR / "assets"
 MANUAL_SLICE_DIR = ASSET_DIR / "manual"
 SOURCE_MANUAL_NAME = "통합민원 업무매뉴얼.pdf"
+KST = timezone(timedelta(hours=9))
 
-# 원본 매뉴얼에서 업무별로 보여줄 쪽 (2026.11.12판, 전체 73쪽)
+# 원본 매뉴얼에서 업무별로 보여줄 쪽 (2026.11.14판, 전체 73쪽)
 SOURCE_PAGES = {
     "출생·사망": (3, 10),
     "가족관계시스템": (11, 14),
@@ -82,8 +83,14 @@ RELATED_SITES = [
      "lines": ["모바일 신분증 진위확인·사본", "저장 시스템"]},
     {"name": "도로명주소", "url": "https://www.juso.go.kr/"},
     {"name": "토지이음", "url": "https://www.eum.go.kr/web/am/amMain.jsp"},
+    {"name": "부동산 공시가격 알리미", "url": "https://www.realtyprice.kr/notice/main/main.do"},
     {"name": "나라배움터", "url": "https://logodi.nhi.go.kr/"},
 ]
+
+# 권한신청서식 신청방법 줄바꿈 (화면 표시용)
+PERMISSION_METHOD_OVERRIDES = {
+    "civil-service-window": "시스템 사용자 등록 ➜ 교육수료\n➜ 서식 작성 후 교육수료증과 함께 공문발송",
+}
 
 HANDBOOK_LABEL_LINES = {
     "inheritance-one-stop": ["안심상속 원스톱서비스", "재산조회"],
@@ -130,7 +137,7 @@ def build_documents() -> list[dict]:
 
 
 def page_text(page) -> str:
-    text = page.extract_text() or ""
+    text = (page.extract_text() or "").replace("\x00", " ")
     text = re.sub(r"-\s*\d{1,3}\s*-", " ", text)  # 쪽 번호 "- 9 -"
     return re.sub(r"\s+", " ", text).strip()
 
@@ -169,7 +176,8 @@ def build_source_assets(documents: list[dict], source_manual: Path) -> tuple[dic
         "name": SOURCE_MANUAL_NAME,
         "url": "assets/source-manual.pdf",
         "size": stat.st_size,
-        "date": (made.date() if made else date.fromtimestamp(stat.st_mtime)).isoformat(),
+        "date": (made.astimezone(KST).date() if made and made.tzinfo else made.date() if made
+                 else date.fromtimestamp(stat.st_mtime)).isoformat(),
         "pages": total,
     }
     return info, index
@@ -192,6 +200,9 @@ def finalize(payload: dict) -> None:
     for handbook in payload["handbooks"]:
         if handbook["slug"] in HANDBOOK_LABEL_LINES:
             handbook["label_lines"] = HANDBOOK_LABEL_LINES[handbook["slug"]]
+    for permission in payload["permissions"]:
+        if permission["slug"] in PERMISSION_METHOD_OVERRIDES:
+            permission["method"] = PERMISSION_METHOD_OVERRIDES[permission["slug"]]
     payload["related_sites"] = RELATED_SITES
     write_site(payload, search_index)
 

@@ -38,10 +38,10 @@
     </div>
     <nav class="tabs" aria-label="자료 유형">
       <div class="width">
-        <button type="button" data-type="manual">업무매뉴얼 <b id="manualCount">0</b></button>
-        <button type="button" data-type="permission">권한신청서식 <b id="permissionCount">0</b></button>
-        <button type="button" data-type="handbook">편람 <b id="handbookCount">0</b></button>
-        <a href="https://www.law.go.kr/lsBylSc.do?menuId=9&amp;subMenuId=55&amp;tabMenuId=261&amp;eventGubun=060118" target="_blank" rel="noopener">국가법령정보센터 별표서식</a>
+        <button type="button" data-type="manual">업무매뉴얼</button>
+        <button type="button" data-type="permission">권한신청서식</button>
+        <button type="button" data-type="handbook">편람</button>
+        <a href="https://www.law.go.kr/lsBylSc.do?menuId=9&amp;subMenuId=55&amp;tabMenuId=261&amp;eventGubun=060118" target="_blank" rel="noopener" class="external">국가법령정보센터 별표서식<svg class="external-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 7.5 8.5M12 9.5v3.25c0 .41-.34.75-.75.75h-8c-.41 0-.75-.34-.75-.75v-8c0-.41.34-.75.75-.75H6.5"/></svg><span class="sr-only">(새 창)</span></a>
       </div>
     </nav>
   </header>
@@ -52,7 +52,6 @@
       <button class="category-all active" id="allButton" type="button"><span>전체 자료</span><b id="activeCount">0</b></button>
       <nav id="categoryList" aria-label="자료 분류"></nav>
       <section class="archive-note">
-        <span>STATIC ARCHIVE</span>
         <strong>안전한 열람 전용</strong>
         <p>이 사이트는 자료 등록·수정·삭제 기능 없이 공개된 파일의 조회와 다운로드만 제공합니다.</p>
       </section>
@@ -62,7 +61,7 @@
       <nav class="breadcrumb" id="breadcrumb" aria-label="현재 위치"></nav>
       <section id="listView">
         <header class="list-heading">
-          <div><span id="listEyebrow">MANUAL ARCHIVE</span><div class="list-title-row"><h2 id="listTitle">업무매뉴얼</h2><p id="listDescription"></p></div></div>
+          <div><div class="list-title-row"><h2 id="listTitle">업무매뉴얼</h2><p id="listDescription"></p></div></div>
           <p>총 <strong id="resultCount">0</strong>건</p>
         </header>
         <div class="result-list" id="resultList"></div>
@@ -72,7 +71,7 @@
     </main>
 
     <aside class="quick-links">
-      <div class="aside-heading"><span>QUICK LINKS</span><strong>관련사이트</strong></div>
+      <div class="aside-heading"><strong>관련사이트</strong></div>
       <nav id="relatedLinks"></nav>
       <div class="updated"><span>자료 기준일</span><strong id="exportDate">-</strong><p>다운로드한 파일은 최신 개정 여부를 다시 확인해 주세요.</p></div>
     </aside>

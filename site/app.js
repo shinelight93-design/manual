@@ -10,11 +10,11 @@ const state = {
 };
 
 const labels = {
-  manual: { title: "업무매뉴얼", eyebrow: "MANUAL ARCHIVE", category: "업무 매뉴얼",
+  manual: { title: "업무매뉴얼", category: "업무 매뉴얼",
     description: "시스템 사용 및 업무 처리 방법 안내" },
-  permission: { title: "권한신청서식", eyebrow: "PERMISSION FORMS", category: "권한 신청",
+  permission: { title: "권한신청서식", category: "권한 신청",
     description: "통합민원대 시스템 권한 신청을 위한 방법 및 서식" },
-  handbook: { title: "업무편람", eyebrow: "WORK HANDBOOK", category: "업무 편람",
+  handbook: { title: "업무편람", category: "업무 편람",
     description: "각 담당부처 및 기관의 실무 편람, 지침, 질의회신집 등" },
 };
 
@@ -164,13 +164,22 @@ function metaFor(item) {
   return [`첨부자료 ${item.attachments.length}개`, total ? formatBytes(total) : "자료 없음"];
 }
 
+function methodLines(container, text) {
+  text.split(/\r?\n/).filter((line) => line.trim()).forEach((line) => {
+    const row = document.createElement("span");
+    row.className = /^[①-⑳]/.test(line.trim()) ? "method-line numbered" : "method-line";
+    row.textContent = line.trim();
+    container.appendChild(row);
+  });
+  return container;
+}
+
 function permissionInfo(item) {
   const info = document.createElement("dl");
   info.className = "permission-info";
   const methodLabel = document.createElement("dt");
   methodLabel.textContent = "신청방법";
-  const method = document.createElement("dd");
-  method.textContent = item.method;
+  const method = methodLines(document.createElement("dd"), item.method);
   info.append(methodLabel, method);
   if (item.notes.length) {
     const cautionLabel = document.createElement("dt");
@@ -226,7 +235,6 @@ function showList(updateRoute = true) {
   $("#detailView").hidden = true;
   $("#searchView").hidden = true;
   $("#listView").hidden = false;
-  $("#listEyebrow").textContent = labels[state.type].eyebrow;
   $("#listTitle").textContent = state.query ? `“${state.query}” 검색 결과` : labels[state.type].title;
   $("#listDescription").textContent = state.query ? "" : labels[state.type].description;
   $("#resultCount").textContent = items.length;
@@ -238,7 +246,7 @@ function showList(updateRoute = true) {
   if (state.type === "manual" && !state.category && !state.query && data.source_manual_file) {
     const block = document.createElement("section");
     block.className = "source-block";
-    block.appendChild(sectionTitle("MANUAL FILES", "업무매뉴얼 원본"));
+    block.appendChild(sectionTitle("업무매뉴얼 원본"));
     renderAttachments(block, [{ ...data.source_manual_file, type: "pdf" }], "");
     list.appendChild(block);
   }
@@ -252,9 +260,6 @@ function showList(updateRoute = true) {
     const card = document.createElement("article");
     card.className = "result-card";
     const copy = document.createElement("div");
-    const kind = document.createElement("span");
-    kind.className = "kind";
-    kind.textContent = labels[state.type].title;
     const title = document.createElement("h3");
     title.textContent = item.title;
     const summary = document.createElement("p");
@@ -275,11 +280,11 @@ function showList(updateRoute = true) {
     actions.appendChild(open);
     if (state.type === "permission") {
       card.classList.add("permission-card");
-      copy.append(kind, title, meta);
+      copy.append(title, meta);
       card.append(copy, permissionInfo(item), actions);
       if (item.attachments.length) actions.appendChild(formDownload(item));
     } else {
-      copy.append(kind, title, summary, meta);
+      copy.append(title, summary, meta);
       card.append(copy, actions);
     }
     list.appendChild(card);
@@ -293,9 +298,6 @@ function detailShell(item, description, meta) {
   article.replaceChildren();
   const header = document.createElement("header");
   header.className = "detail-header";
-  const kind = document.createElement("span");
-  kind.className = "kind";
-  kind.textContent = labels[state.type].eyebrow;
   const title = document.createElement("h2");
   title.textContent = item.title;
   title.tabIndex = -1;
@@ -312,22 +314,20 @@ function detailShell(item, description, meta) {
     span.appendChild(strong);
     metadata.appendChild(span);
   });
-  header.append(kind, title, summary, metadata);
+  header.append(title, summary, metadata);
   const body = document.createElement("div");
   body.className = "detail-body";
   article.append(header, body);
   return { article, body, title };
 }
 
-function sectionTitle(eyebrow, title) {
+function sectionTitle(title) {
   const heading = document.createElement("div");
   heading.className = "section-title";
   const copy = document.createElement("div");
-  const label = document.createElement("span");
-  label.textContent = eyebrow;
   const strong = document.createElement("h3");
   strong.textContent = title;
-  copy.append(label, strong);
+  copy.append(strong);
   heading.appendChild(copy);
   return heading;
 }
@@ -406,7 +406,7 @@ function renderManual(item, page = 0) {
   if (!item.source_file || item.source_pages.length !== 2) return;
   const [start, end] = item.source_pages;
   const target = page >= start && page <= end ? page : start;
-  body.appendChild(sectionTitle("ORIGINAL PDF", `업무매뉴얼 ${pageLabel(start, end)}`));
+  body.appendChild(sectionTitle(`업무매뉴얼 ${pageLabel(start, end)}`));
   const viewer = document.createElement("section");
   viewer.className = "pdf-viewer";
   const toolbar = document.createElement("div");
@@ -436,10 +436,10 @@ function renderManual(item, page = 0) {
 
 function renderPermission(item) {
   const { body } = detailShell(item, "", [["담당부서", item.department]]);
-  body.appendChild(sectionTitle("APPLICATION PROCESS", "신청방법"));
+  body.appendChild(sectionTitle("신청방법"));
   const process = document.createElement("div");
   process.className = "process-box";
-  process.textContent = item.method;
+  methodLines(process, item.method);
   body.appendChild(process);
   if (item.notes.length) {
     const notes = document.createElement("div");
@@ -466,14 +466,14 @@ function renderPermission(item) {
     body.appendChild(link);
   }
   if (item.attachments_enabled === false) return;
-  body.appendChild(sectionTitle("DOWNLOAD FORMS", "권한신청 서식"));
+  body.appendChild(sectionTitle("권한신청 서식"));
   renderAttachments(body, item.attachments, "등록된 권한신청 서식이 없습니다.");
 }
 
 function renderHandbook(item) {
   const total = item.attachments.reduce((sum, file) => sum + file.size, 0);
   const { body } = detailShell(item, "업무 처리 시 참고할 편람 원문을 조회하거나 내려받을 수 있습니다.", [["첨부자료", `${item.attachments.length}개`], ["전체용량", total ? formatBytes(total) : "-"]]);
-  body.appendChild(sectionTitle("HANDBOOK FILES", "편람 원문"));
+  body.appendChild(sectionTitle("편람 원문"));
   renderAttachments(body, item.attachments, "등록된 편람 자료가 없습니다.");
   const firstPdf = item.attachments.find((file) => file.type === "pdf");
   if (firstPdf) showPdf(body, firstPdf);
@@ -778,14 +778,32 @@ function bindEvents() {
   window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenu(); });
 }
 
+function alignSearchTitle() {
+  // '통합검색' 글자를 아래 '업무매뉴얼' 탭 칸의 가운데에 맞춘다(넓은 화면에서만).
+  const form = $("#searchForm");
+  const tab = $('[data-type="manual"]');
+  if (!form || !tab || window.innerWidth <= 760) {
+    form?.style.removeProperty("--title-column");
+    form?.style.removeProperty("--title-start");
+    form?.style.removeProperty("--title-width");
+    return;
+  }
+  const box = form.getBoundingClientRect();
+  const cell = tab.getBoundingClientRect();
+  const start = Math.max(0, cell.left - box.left);
+  form.style.setProperty("--title-start", `${start}px`);
+  form.style.setProperty("--title-width", `${cell.width}px`);
+  form.style.setProperty("--title-column", `${start + cell.width}px`);
+}
+
 function main() {
-  $("#manualCount").textContent = data.documents.length;
-  $("#permissionCount").textContent = data.permissions.reduce((sum, item) => sum + item.attachments.length, 0);
-  $("#handbookCount").textContent = data.handbooks.reduce((sum, item) => sum + item.attachments.length, 0);
   $("#exportDate").textContent = formatDate(`${data.exported_on}T00:00:00`);
   renderRelatedLinks();
   bindEvents();
   loadRoute();
+  alignSearchTitle();
+  window.addEventListener("resize", alignSearchTitle);
+  document.fonts?.ready.then(alignSearchTitle);
 }
 
 main();

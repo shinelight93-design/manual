@@ -27,7 +27,7 @@
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; overflow-x: hidden; line-height: 1.5; }
+body { margin: 0; min-width: 320px; overflow-x: hidden; line-height: 1.5; word-break: keep-all; overflow-wrap: break-word; }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
@@ -59,8 +59,8 @@ button { color: inherit; }
 
 /* 통합검색 */
 .search-wrap { background: var(--deep); color: var(--paper); }
-.search { min-height: 108px; display: grid; grid-template-columns: 170px minmax(360px, 760px) minmax(350px, 1fr); align-items: center; gap: 20px; }
-.search-title { padding-left: 22px; font-size: 24px; letter-spacing: -.05em; white-space: nowrap; }
+.search { min-height: 108px; display: grid; grid-template-columns: var(--title-column, 170px) minmax(360px, 760px) minmax(350px, 1fr); align-items: center; gap: 20px; }
+.search-title { justify-self: start; width: var(--title-width, auto); margin-left: var(--title-start, 22px); font-size: 24px; letter-spacing: 0; text-align: center; white-space: nowrap; }
 .search label { display: grid; grid-template-columns: minmax(0, 1fr) 100px; min-height: 56px; overflow: hidden; border: 1px solid transparent; border-radius: var(--radius); background: var(--paper); }
 .search label:focus-within { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(195, 186, 186, .45); }
 .search input { min-width: 0; border: 0; outline: 0; padding: 0 20px; color: var(--ink); font-size: 16px; }
@@ -82,7 +82,9 @@ button { color: inherit; }
 .tabs button:hover, .tabs a:hover { color: var(--ink); background: var(--mist); }
 .tabs button.active { color: var(--ink); font-weight: 800; }
 .tabs button.active::after { content: ""; position: absolute; right: 18px; bottom: -1px; left: 18px; height: 3px; border-radius: 3px 3px 0 0; background: var(--deep); }
-.tabs button.active b { background: var(--deep); color: var(--paper); }
+.tabs a.external { gap: 6px; }
+.external-icon { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .7; transition: opacity .15s, transform .15s; }
+.tabs a.external:hover .external-icon { opacity: 1; transform: translate(1px, -1px); }
 
 /* 3단 배치 */
 .layout { display: grid; grid-template-columns: 236px minmax(0, 1fr) 244px; gap: 28px; padding-top: 32px; padding-bottom: 72px; }
@@ -145,7 +147,9 @@ main:focus { outline: none; }
 .permission-card .meta span + span::before { content: none; }
 .permission-info { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px 14px; margin: 0; padding-left: 20px; border-left: 1px solid var(--line); font-size: 13.5px; line-height: 1.6; }
 .permission-info dt { color: var(--taupe); font-weight: 800; }
-.permission-info dd { margin: 0; color: var(--ink); white-space: pre-line; overflow-wrap: anywhere; }
+.permission-info dd { margin: 0; color: var(--ink); }
+.method-line { display: block; }
+.method-line.numbered { padding-left: 1.25em; text-indent: -1.25em; }
 .permission-info ul { margin: 0; padding-left: 16px; }
 .caution { color: var(--alert) !important; }
 
@@ -165,14 +169,14 @@ main:focus { outline: none; }
 .detail-body { padding: 30px 36px 40px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); background: var(--paper); }
 .section-title { display: flex; justify-content: space-between; align-items: end; margin: 4px 0 16px; padding-bottom: 11px; border-bottom: 1px solid var(--line); }
 .section-title h3 { margin: 4px 0 0; color: var(--ink); font-size: 19px; }
-.process-box { margin: 0 0 24px; padding: 22px 24px; border-left: 4px solid var(--mauve); border-radius: 0 var(--radius) var(--radius) 0; background: var(--mist); white-space: pre-line; font-size: 15px; font-weight: 600; line-height: 1.8; }
+.process-box { margin: 0 0 24px; padding: 22px 24px; border-left: 4px solid var(--mauve); border-radius: 0 var(--radius) var(--radius) 0; background: var(--mist); font-size: 15px; font-weight: 600; line-height: 1.8; }
 .notes { margin: 0 0 26px; padding: 18px 22px; border: 1px solid var(--alert-line); border-radius: var(--radius); background: var(--alert-bg); }
 .notes strong { font-size: 14px; }
 .notes ul { margin: 8px 0 0; padding-left: 18px; color: var(--ink); font-size: 14px; line-height: 1.7; }
 .attachment-list { display: grid; gap: 8px; }
 .attachment { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
 .attachment > b { padding: 6px 4px; border-radius: 4px; background: var(--deep); color: var(--paper); font-size: 11px; text-align: center; }
-.attachment strong { display: block; overflow-wrap: anywhere; font-size: 14px; }
+.attachment strong { display: block; word-break: break-all; font-size: 14px; }
 .attachment small { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 12px; }
 .attachment .actions { display: flex; gap: 6px; }
 .attachment a, .attachment button, .primary-link { display: inline-flex; align-items: center; min-height: 34px; border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 0 12px; background: var(--paper); color: var(--ink); font-size: 12.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
@@ -239,7 +243,6 @@ footer strong { color: var(--paper); font-size: 14px; }
   .quick-links { display: none; }
   .brand-row > .notice { display: none; }
   .search { grid-template-columns: 130px minmax(0, 1fr); gap: 12px 18px; padding: 18px 0; }
-  .search-title { padding-left: 8px; }
   .popular-tasks { grid-column: 2; }
 }
 @media (max-width: 760px) {
@@ -251,8 +254,8 @@ footer strong { color: var(--paper); font-size: 14px; }
   .brand b { overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
   .brand small { overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
   .menu-button { display: block; padding: 9px 11px; font-size: 12px; }
-  .search { min-height: 0; grid-template-columns: 1fr; gap: 10px; padding: 16px 0; }
-  .search-title { padding-left: 0; font-size: 19px; }
+  .search { min-height: 0; grid-template-columns: 1fr !important; gap: 10px; padding: 16px 0; }
+  .search-title { width: auto; margin-left: 0; font-size: 19px; text-align: left; }
   .search label { width: 100%; min-width: 0; grid-template-columns: minmax(0, 1fr) 76px; min-height: 48px; }
   .search input { padding: 0 13px; font-size: 15px; }
   .search label svg { display: none; }
