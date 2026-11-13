@@ -64,9 +64,9 @@ MANUAL_OVERRIDES = {
     "차세대지방세": {"category": "차세대지방세시스템", "title": "차세대지방세시스템",
                  "summary": "지방세납세증명서, 세목별과세증명서, 납부확인서 등"},
     "부동산공시가격": {"category": "부동산공시가격산정시스템", "title": "부동산공시가격산정시스템",
-                  "summary": "개별공시지가확인서, 개별주택가격확인서"},
+                  "summary": "개별공시지가확인서, 개별주택가격확인서", "department": "민원토지과(토지)·세무1과(주택)"},
     "부동산거래관리": {"category": "부동산거래관리시스템", "title": "부동산거래관리시스템",
-                  "summary": "확정일자 부여, 임대차신고", "department": "민원토지과(토지)·세무1과(주택)"},
+                  "summary": "확정일자 부여, 임대차신고", "department": "민원토지과 토지관리팀"},
     "외국인정보공동이용": {"category": "외국인정보공동이용시스템", "title": "외국인정보공동이용시스템",
                     "summary": "출입국사실증명서, 외국인사실증명서, 체류지변경, 체류확인서"},
     "민원처리운영창구": {"category": "민원처리운영창구", "title": "민원처리운영창구"},
@@ -80,6 +80,9 @@ RELATED_SITES = [
     {"name": "웹팩스", "url": "http://102.6.1.119:8080/WebFax/users/login"},
     {"name": "모바일 신분증 진위확인·사본저장 시스템", "url": "https://ive.mobileid.go.kr/userLogin.do",
      "lines": ["모바일 신분증 진위확인·사본", "저장 시스템"]},
+    {"name": "도로명주소", "url": "https://www.juso.go.kr/"},
+    {"name": "토지이음", "url": "https://www.eum.go.kr/web/am/amMain.jsp"},
+    {"name": "나라배움터", "url": "https://logodi.nhi.go.kr/"},
 ]
 
 HANDBOOK_LABEL_LINES = {

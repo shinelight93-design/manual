@@ -10,9 +10,12 @@ const state = {
 };
 
 const labels = {
-  manual: { title: "업무매뉴얼", eyebrow: "MANUAL ARCHIVE", category: "업무 매뉴얼" },
-  permission: { title: "권한신청서식", eyebrow: "PERMISSION FORMS", category: "권한 신청" },
-  handbook: { title: "업무편람", eyebrow: "WORK HANDBOOK", category: "업무 편람" },
+  manual: { title: "업무매뉴얼", eyebrow: "MANUAL ARCHIVE", category: "업무 매뉴얼",
+    description: "시스템 사용 및 업무 처리 방법 안내" },
+  permission: { title: "권한신청서식", eyebrow: "PERMISSION FORMS", category: "권한 신청",
+    description: "통합민원대 시스템 권한 신청을 위한 방법 및 서식" },
+  handbook: { title: "업무편람", eyebrow: "WORK HANDBOOK", category: "업무 편람",
+    description: "각 담당부처 및 기관의 실무 편람, 지침, 질의회신집 등" },
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -161,6 +164,62 @@ function metaFor(item) {
   return [`첨부자료 ${item.attachments.length}개`, total ? formatBytes(total) : "자료 없음"];
 }
 
+function permissionInfo(item) {
+  const info = document.createElement("dl");
+  info.className = "permission-info";
+  const methodLabel = document.createElement("dt");
+  methodLabel.textContent = "신청방법";
+  const method = document.createElement("dd");
+  method.textContent = item.method;
+  info.append(methodLabel, method);
+  if (item.notes.length) {
+    const cautionLabel = document.createElement("dt");
+    cautionLabel.className = "caution";
+    cautionLabel.textContent = "주의사항";
+    const caution = document.createElement("dd");
+    const list = document.createElement("ul");
+    item.notes.forEach((note) => {
+      const row = document.createElement("li");
+      row.textContent = note;
+      list.appendChild(row);
+    });
+    caution.appendChild(list);
+    info.append(cautionLabel, caution);
+  }
+  return info;
+}
+
+function downloadLink(file, text) {
+  const link = document.createElement("a");
+  link.href = file.url;
+  link.download = file.name;
+  link.textContent = text;
+  return link;
+}
+
+function formDownload(item) {
+  if (item.attachments.length === 1) {
+    const link = downloadLink(item.attachments[0], "서식 내려받기");
+    link.className = "download-button";
+    link.title = item.attachments[0].name;
+    return link;
+  }
+  const menu = document.createElement("details");
+  menu.className = "download-menu";
+  const summary = document.createElement("summary");
+  summary.textContent = `서식 내려받기 (${item.attachments.length})`;
+  const list = document.createElement("div");
+  item.attachments.forEach((file) => {
+    const link = downloadLink(file, file.name);
+    const size = document.createElement("small");
+    size.textContent = `${file.type.toUpperCase()} · ${formatBytes(file.size)}`;
+    link.appendChild(size);
+    list.appendChild(link);
+  });
+  menu.append(summary, list);
+  return menu;
+}
+
 function showList(updateRoute = true) {
   const items = filteredItems();
   state.search = "";
@@ -169,6 +228,7 @@ function showList(updateRoute = true) {
   $("#listView").hidden = false;
   $("#listEyebrow").textContent = labels[state.type].eyebrow;
   $("#listTitle").textContent = state.query ? `“${state.query}” 검색 결과` : labels[state.type].title;
+  $("#listDescription").textContent = state.query ? "" : labels[state.type].description;
   $("#resultCount").textContent = items.length;
   renderBreadcrumb();
   renderCategories();
@@ -206,12 +266,22 @@ function showList(updateRoute = true) {
       span.textContent = value;
       meta.appendChild(span);
     });
-    copy.append(kind, title, summary, meta);
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
     const open = document.createElement("button");
     open.type = "button";
     open.textContent = "자료 보기";
     open.addEventListener("click", () => openItem(item.slug));
-    card.append(copy, open);
+    actions.appendChild(open);
+    if (state.type === "permission") {
+      card.classList.add("permission-card");
+      copy.append(kind, title, meta);
+      card.append(copy, permissionInfo(item), actions);
+      if (item.attachments.length) actions.appendChild(formDownload(item));
+    } else {
+      copy.append(kind, title, summary, meta);
+      card.append(copy, actions);
+    }
     list.appendChild(card);
   });
   if (updateRoute) setRoute();
@@ -375,7 +445,8 @@ function renderPermission(item) {
     const notes = document.createElement("div");
     notes.className = "notes";
     const title = document.createElement("strong");
-    title.textContent = "확인사항";
+    title.className = "caution";
+    title.textContent = "주의사항";
     const list = document.createElement("ul");
     item.notes.forEach((note) => {
       const row = document.createElement("li");
@@ -444,6 +515,7 @@ function renderRelatedLinks() {
         name.appendChild(document.createTextNode(line));
       });
       link.title = site.name;
+      name.className = "multiline";
     } else {
       name.textContent = site.name;
     }
@@ -700,6 +772,9 @@ function bindEvents() {
     $("#menuButton").setAttribute("aria-expanded", String(panel.classList.contains("open")));
   });
   window.addEventListener("popstate", loadRoute);
+  document.addEventListener("click", (event) => {
+    $$(".download-menu[open]").forEach((menu) => { if (!menu.contains(event.target)) menu.open = false; });
+  });
   window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenu(); });
 }
 
