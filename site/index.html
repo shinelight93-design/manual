@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#173b4d">
+  <meta name="theme-color" content="#304156">
   <meta name="description" content="통합민원대 업무매뉴얼, 권한신청서식과 업무편람을 검색하고 내려받습니다.">
   <title>통합민원대 업무자료실</title>
   <link rel="stylesheet" href="./styles.css">
@@ -24,15 +24,16 @@
     </div>
     <div class="search-wrap">
       <form class="search width" id="searchForm" role="search">
-        <div>
-          <span>통합 업무검색</span>
-          <h1>필요한 업무자료를 한 곳에서 찾으세요</h1>
-        </div>
+        <strong class="search-title">통합검색</strong>
         <label>
           <span class="sr-only">검색어</span>
-          <input id="searchInput" type="search" maxlength="100" placeholder="업무명, 담당부서, 서식명을 입력하세요" autocomplete="off">
-          <button type="submit">검색</button>
+          <input id="searchInput" type="search" maxlength="100" placeholder="업무명, 처리 절차, 담당부서를 검색하세요" autocomplete="off">
+          <button type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"></circle><path d="m14.5 14.5 5 5"></path></svg>
+            <span>검색</span>
+          </button>
         </label>
+        <div class="popular-tasks"><span>자주 찾는 업무</span><button type="button" data-popular="주민등록">주민등록</button><button type="button" data-popular="인감">인감</button><button type="button" data-popular="전입신고">전입신고</button><button type="button" data-popular="건축물대장">건축물대장</button></div>
       </form>
     </div>
     <nav class="tabs" aria-label="자료 유형">
@@ -40,7 +41,7 @@
         <button type="button" data-type="manual">업무매뉴얼 <b id="manualCount">0</b></button>
         <button type="button" data-type="permission">권한신청서식 <b id="permissionCount">0</b></button>
         <button type="button" data-type="handbook">편람 <b id="handbookCount">0</b></button>
-        <a href="https://www.law.go.kr/lsBylSc.do?menuId=9&amp;subMenuId=55&amp;tabMenuId=261&amp;eventGubun=060118" target="_blank" rel="noopener">국가법령정보센터 별표서식 ↗</a>
+        <a href="https://www.law.go.kr/lsBylSc.do?menuId=9&amp;subMenuId=55&amp;tabMenuId=261&amp;eventGubun=060118" target="_blank" rel="noopener">국가법령정보센터 별표서식</a>
       </div>
     </nav>
   </header>

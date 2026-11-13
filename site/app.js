@@ -124,8 +124,14 @@ function renderCategories() {
       state.category = item.key;
       state.query = "";
       $("#searchInput").value = "";
-      showList();
       closeMenu();
+      const matches = filteredItems();
+      if (matches.length === 1) {
+        renderCategories();
+        openItem(matches[0].slug);
+      } else {
+        showList();
+      }
     });
     list.appendChild(button);
   });
@@ -457,6 +463,13 @@ function bindEvents() {
     state.category = "";
     showList();
   });
+  $$('[data-popular]').forEach((button) => button.addEventListener("click", () => {
+    state.type = "manual";
+    state.category = "";
+    state.query = button.dataset.popular;
+    $("#searchInput").value = state.query;
+    showList();
+  }));
   $("#menuButton").addEventListener("click", () => {
     const panel = $("#categoryPanel");
     panel.classList.toggle("open");
