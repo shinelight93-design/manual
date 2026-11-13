@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b4d">
+  <meta name="description" content="통합민원대 업무매뉴얼, 권한신청서식과 업무편람을 검색하고 내려받습니다.">
+  <title>통합민원대 업무자료실</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">본문 바로가기</a>
+  <header class="site-header">
+    <div class="utility">
+      <div class="width"><span>전남광주통합특별시 동구</span><strong>조회·다운로드 전용</strong></div>
+    </div>
+    <div class="brand-row width">
+      <a class="brand" href="./" aria-label="통합민원대 업무자료실 홈">
+        <img src="./assets/donggu-logo.png" alt="">
+        <span><b>통합민원대 업무자료실</b><small>INTEGRATED CIVIL SERVICE ARCHIVE</small></span>
+      </a>
+      <p><span>업무 처리 전 확인</span> 최신 법령·편람·소관부서 지침을 우선 확인하세요.</p>
+      <button class="menu-button" id="menuButton" type="button" aria-expanded="false" aria-controls="categoryPanel">자료 분류</button>
+    </div>
+    <div class="search-wrap">
+      <form class="search width" id="searchForm" role="search">
+        <div>
+          <span>통합 업무검색</span>
+          <h1>필요한 업무자료를 한 곳에서 찾으세요</h1>
+        </div>
+        <label>
+          <span class="sr-only">검색어</span>
+          <input id="searchInput" type="search" maxlength="100" placeholder="업무명, 담당부서, 서식명을 입력하세요" autocomplete="off">
+          <button type="submit">검색</button>
+        </label>
+      </form>
+    </div>
+    <nav class="tabs" aria-label="자료 유형">
+      <div class="width">
+        <button type="button" data-type="manual">업무매뉴얼 <b id="manualCount">0</b></button>
+        <button type="button" data-type="permission">권한신청서식 <b id="permissionCount">0</b></button>
+        <button type="button" data-type="handbook">편람 <b id="handbookCount">0</b></button>
+        <a href="https://www.law.go.kr/lsBylSc.do?menuId=9&amp;subMenuId=55&amp;tabMenuId=261&amp;eventGubun=060118" target="_blank" rel="noopener">국가법령정보센터 별표서식 ↗</a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="layout width">
+    <aside class="categories" id="categoryPanel">
+      <div class="aside-heading"><span id="categoryEyebrow">업무 매뉴얼</span><strong>분류별 찾기</strong></div>
+      <button class="category-all active" id="allButton" type="button"><span>전체 자료</span><b id="activeCount">0</b></button>
+      <nav id="categoryList" aria-label="자료 분류"></nav>
+      <section class="archive-note">
+        <span>STATIC ARCHIVE</span>
+        <strong>안전한 열람 전용</strong>
+        <p>이 사이트는 자료 등록·수정·삭제 기능 없이 공개된 파일의 조회와 다운로드만 제공합니다.</p>
+      </section>
+    </aside>
+
+    <main id="content" tabindex="-1">
+      <nav class="breadcrumb" id="breadcrumb" aria-label="현재 위치"></nav>
+      <section id="listView">
+        <header class="list-heading">
+          <div><span id="listEyebrow">MANUAL ARCHIVE</span><h2 id="listTitle">업무매뉴얼</h2></div>
+          <p>총 <strong id="resultCount">0</strong>건</p>
+        </header>
+        <div class="result-list" id="resultList"></div>
+      </section>
+      <article id="detailView" hidden></article>
+    </main>
+
+    <aside class="quick-links">
+      <div class="aside-heading"><span>QUICK LINKS</span><strong>관련사이트</strong></div>
+      <nav id="relatedLinks"></nav>
+      <div class="updated"><span>자료 기준일</span><strong id="exportDate">-</strong><p>다운로드한 파일은 최신 개정 여부를 다시 확인해 주세요.</p></div>
+    </aside>
+  </div>
+
+  <footer><div class="width"><strong>통합민원대 업무자료실</strong><p>업무자료의 정확성과 최신성은 각 담당부서에서 확인합니다.</p></div></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
