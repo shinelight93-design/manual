@@ -60,7 +60,7 @@ button { color: inherit; }
 /* 통합검색 */
 .search-wrap { background: var(--deep); color: var(--paper); }
 .search { min-height: 108px; display: grid; grid-template-columns: var(--title-column, 170px) minmax(360px, 760px) minmax(350px, 1fr); align-items: center; gap: 20px; }
-.search-title { justify-self: start; width: var(--title-width, auto); margin-left: var(--title-start, 22px); font-size: 24px; letter-spacing: 0; text-align: center; white-space: nowrap; }
+.search-title { justify-self: start; width: var(--title-width, auto); margin-left: var(--title-start, 22px); font-size: 24px; letter-spacing: .05em; text-align: center; white-space: nowrap; }
 .search label { display: grid; grid-template-columns: minmax(0, 1fr) 100px; min-height: 56px; overflow: hidden; border: 1px solid transparent; border-radius: var(--radius); background: var(--paper); }
 .search label:focus-within { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(195, 186, 186, .45); }
 .search input { min-width: 0; border: 0; outline: 0; padding: 0 20px; color: var(--ink); font-size: 16px; }
@@ -181,6 +181,7 @@ main:focus { outline: none; }
 .attachment .actions { display: flex; gap: 6px; }
 .attachment a, .attachment button, .primary-link { display: inline-flex; align-items: center; min-height: 34px; border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 0 12px; background: var(--paper); color: var(--ink); font-size: 12.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .attachment button:hover { border-color: var(--taupe); background: var(--mist); }
+.attachment button.active { border-color: var(--taupe); background: var(--blush); }
 .attachment a.download, .primary-link { border-color: var(--deep); background: var(--deep); color: var(--paper); }
 .attachment a.download:hover, .primary-link:hover { background: var(--ink); }
 .pdf-viewer { margin-top: 24px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--radius); }

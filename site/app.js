@@ -113,7 +113,7 @@ function renderCategories() {
   const items = state.type === "manual"
     ? [...new Set(data.documents.map((item) => item.category))].map((name) => ({ key: name, name }))
     : itemsForType().map((item) => ({ key: item.slug, name: item.title, lines: item.label_lines }));
-  $("#categoryEyebrow").textContent = labels[state.type].category;
+  $("#categoryTitle").textContent = labels[state.type].title;
   $("#activeCount").textContent = itemsForType().length;
   $("#allButton").classList.toggle("active", !state.category);
   items.forEach((item, index) => {
@@ -357,8 +357,11 @@ function renderAttachments(container, attachments, emptyMessage) {
     if (file.type === "pdf") {
       const view = document.createElement("button");
       view.type = "button";
+      view.className = "view-toggle";
+      view.dataset.url = file.url;
       view.textContent = "바로보기";
-      view.addEventListener("click", () => showPdf(container, file));
+      view.setAttribute("aria-expanded", "false");
+      view.addEventListener("click", () => togglePdf(container, file));
       actions.appendChild(view);
     }
     const download = document.createElement("a");
@@ -371,6 +374,26 @@ function renderAttachments(container, attachments, emptyMessage) {
     list.appendChild(row);
   });
   container.appendChild(list);
+}
+
+function syncViewButtons(container) {
+  const openUrl = container.querySelector(".pdf-viewer")?.dataset.url;
+  container.querySelectorAll(".view-toggle").forEach((button) => {
+    const open = button.dataset.url === openUrl;
+    button.textContent = open ? "닫기" : "바로보기";
+    button.classList.toggle("active", open);
+    button.setAttribute("aria-expanded", String(open));
+  });
+}
+
+function togglePdf(container, file) {
+  const viewer = container.querySelector(".pdf-viewer");
+  if (viewer && viewer.dataset.url === file.url) {
+    viewer.remove();
+    syncViewButtons(container);
+    return;
+  }
+  showPdf(container, file);
 }
 
 function showPdf(container, file) {
@@ -394,6 +417,8 @@ function showPdf(container, file) {
   viewer.querySelector("strong").textContent = file.name;
   viewer.querySelector("a").href = file.url;
   viewer.querySelector("iframe").src = `${file.url}#view=FitH`;
+  viewer.dataset.url = file.url;
+  syncViewButtons(container);
   viewer.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -406,7 +431,6 @@ function renderManual(item, page = 0) {
   if (!item.source_file || item.source_pages.length !== 2) return;
   const [start, end] = item.source_pages;
   const target = page >= start && page <= end ? page : start;
-  body.appendChild(sectionTitle(`업무매뉴얼 ${pageLabel(start, end)}`));
   const viewer = document.createElement("section");
   viewer.className = "pdf-viewer";
   const toolbar = document.createElement("div");
