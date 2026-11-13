@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#304156">
+  <meta name="theme-color" content="#736f72">
   <meta name="description" content="통합민원대 업무매뉴얼, 권한신청서식과 업무편람을 검색하고 내려받습니다.">
   <title>통합민원대 업무자료실</title>
   <link rel="stylesheet" href="./styles.css">
@@ -19,7 +19,7 @@
         <img src="./assets/donggu-logo.png" alt="">
         <span><b>통합민원대 업무자료실</b><small>INTEGRATED CIVIL SERVICE ARCHIVE</small></span>
       </a>
-      <p><span>업무 처리 전 확인</span> 최신 법령·편람·소관부서 지침을 우선 확인하세요.</p>
+      <p class="notice" role="note"><span>업무 처리 전 확인</span> 최신 법령·편람·소관부서 지침을 우선 확인하세요.</p>
       <button class="menu-button" id="menuButton" type="button" aria-expanded="false" aria-controls="categoryPanel">자료 분류</button>
     </div>
     <div class="search-wrap">
@@ -68,6 +68,7 @@
         <div class="result-list" id="resultList"></div>
       </section>
       <article id="detailView" hidden></article>
+      <section id="searchView" class="search-view" hidden aria-live="polite"></section>
     </main>
 
     <aside class="quick-links">
@@ -80,6 +81,7 @@
   <footer><div class="width"><strong>통합민원대 업무자료실</strong><p>업무자료의 정확성과 최신성은 각 담당부서에서 확인합니다.</p></div></footer>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="./data.js"></script>
+  <script src="./search-index.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

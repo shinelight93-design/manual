@@ -1,9 +1,12 @@
 const data = window.PORTAL_DATA;
+const sourceIndex = window.PORTAL_SEARCH || [];
 
 const state = {
   type: "manual",
   category: "",
   query: "",
+  search: "",
+  group: "all",
 };
 
 const labels = {
@@ -60,17 +63,24 @@ function filteredItems() {
   });
 }
 
-function setRoute(item = "") {
+function setRoute(item = "", page = 0) {
   const url = new URL(location.href);
   url.search = "";
+  if (state.search) {
+    url.searchParams.set("search", state.search);
+    if (state.group !== "all") url.searchParams.set("group", state.group);
+    history.pushState({}, "", url);
+    return;
+  }
   url.searchParams.set("type", state.type);
   if (state.category) url.searchParams.set("category", state.category);
   if (state.query) url.searchParams.set("q", state.query);
   if (item) url.searchParams.set("item", item);
+  if (page) url.searchParams.set("page", page);
   history.pushState({}, "", url);
 }
 
-function renderBreadcrumb(current = "") {
+function renderBreadcrumb(current = "", section = "") {
   const breadcrumb = $("#breadcrumb");
   breadcrumb.replaceChildren();
   const home = document.createElement("button");
@@ -79,12 +89,13 @@ function renderBreadcrumb(current = "") {
   home.addEventListener("click", () => {
     state.category = "";
     state.query = "";
+    state.search = "";
     $("#searchInput").value = "";
     showList();
   });
   breadcrumb.appendChild(home);
   const type = document.createElement("span");
-  type.textContent = labels[state.type].title;
+  type.textContent = section || labels[state.type].title;
   breadcrumb.appendChild(type);
   if (current) {
     const detail = document.createElement("span");
@@ -152,7 +163,9 @@ function metaFor(item) {
 
 function showList(updateRoute = true) {
   const items = filteredItems();
+  state.search = "";
   $("#detailView").hidden = true;
+  $("#searchView").hidden = true;
   $("#listView").hidden = false;
   $("#listEyebrow").textContent = labels[state.type].eyebrow;
   $("#listTitle").textContent = state.query ? `“${state.query}” 검색 결과` : labels[state.type].title;
@@ -162,6 +175,13 @@ function showList(updateRoute = true) {
   $$('[data-type]').forEach((button) => button.classList.toggle("active", button.dataset.type === state.type));
   const list = $("#resultList");
   list.replaceChildren();
+  if (state.type === "manual" && !state.category && !state.query && data.source_manual_file) {
+    const block = document.createElement("section");
+    block.className = "source-block";
+    block.appendChild(sectionTitle("MANUAL FILES", "업무매뉴얼 원본"));
+    renderAttachments(block, [{ ...data.source_manual_file, type: "pdf" }], "");
+    list.appendChild(block);
+  }
   if (!items.length) {
     const empty = document.createElement("div");
     empty.className = "empty";
@@ -211,6 +231,7 @@ function detailShell(item, description, meta) {
   title.tabIndex = -1;
   const summary = document.createElement("p");
   summary.textContent = description;
+  summary.hidden = !description;
   const metadata = document.createElement("div");
   metadata.className = "detail-meta";
   meta.forEach(([label, value]) => {
@@ -306,47 +327,45 @@ function showPdf(container, file) {
   viewer.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function renderManual(item) {
+function pageLabel(start, end) {
+  return start === end ? `${start}쪽` : `${start}~${end}쪽`;
+}
+
+function renderManual(item, page = 0) {
   const { body } = detailShell(item, item.summary, [["업무분류", item.category], ["담당부서", item.department]]);
-  if (data.source_manual && item.source_pages.length === 2) {
-    const [start, end] = item.source_pages;
-    body.appendChild(sectionTitle("ORIGINAL PDF", `원문 업무매뉴얼 ${start === end ? `${start}쪽` : `${start}~${end}쪽`}`));
-    const file = { name: "통합민원 업무매뉴얼.pdf", url: `${data.source_manual}#page=${start}&view=FitH` };
-    const viewer = document.createElement("section");
-    viewer.className = "pdf-viewer";
-    const toolbar = document.createElement("div");
-    toolbar.className = "pdf-toolbar";
-    const name = document.createElement("strong");
-    name.textContent = file.name;
-    const open = document.createElement("a");
-    open.href = file.url;
-    open.target = "_blank";
-    open.rel = "noopener";
-    open.textContent = "새 창에서 크게 보기";
-    toolbar.append(name, open);
-    const frame = document.createElement("iframe");
-    frame.title = `${item.title} 원문`;
-    frame.loading = "lazy";
-    frame.src = file.url;
-    viewer.append(toolbar, frame);
-    body.appendChild(viewer);
+  if (!item.source_file || item.source_pages.length !== 2) return;
+  const [start, end] = item.source_pages;
+  const target = page >= start && page <= end ? page : start;
+  body.appendChild(sectionTitle("ORIGINAL PDF", `업무매뉴얼 ${pageLabel(start, end)}`));
+  const viewer = document.createElement("section");
+  viewer.className = "pdf-viewer";
+  const toolbar = document.createElement("div");
+  toolbar.className = "pdf-toolbar";
+  const name = document.createElement("strong");
+  name.textContent = `통합민원 업무매뉴얼 · ${pageLabel(start, end)}`;
+  const open = document.createElement("a");
+  open.href = item.source_file;
+  open.target = "_blank";
+  open.rel = "noopener";
+  open.textContent = "새 창에서 크게 보기";
+  toolbar.append(name, open);
+  if (page && target === page) {
+    const note = document.createElement("p");
+    note.className = "pdf-note";
+    note.textContent = `검색하신 내용이 있는 원본 ${page}쪽을 표시합니다.`;
+    viewer.append(toolbar, note);
+  } else {
+    viewer.appendChild(toolbar);
   }
-  body.appendChild(sectionTitle("WORK GUIDE", "업무 처리 요약"));
-  const copy = document.createElement("div");
-  copy.className = "manual-copy";
-  item.content.split(/\r?\n/).filter(Boolean).forEach((line) => {
-    let element;
-    if (/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]+\./.test(line)) element = document.createElement("h3");
-    else if (/^(▣|\d+\.)/.test(line)) element = document.createElement("h4");
-    else element = document.createElement("p");
-    element.textContent = line;
-    copy.appendChild(element);
-  });
-  body.appendChild(copy);
+  const frame = document.createElement("iframe");
+  frame.title = `${item.title} 업무매뉴얼 ${pageLabel(start, end)}`;
+  frame.src = `${item.source_file}#page=${target - start + 1}&view=FitH`;
+  viewer.appendChild(frame);
+  body.appendChild(viewer);
 }
 
 function renderPermission(item) {
-  const { body } = detailShell(item, "통합민원대 시스템 권한 신청 절차와 내려받을 수 있는 신청서식입니다.", [["담당부서", item.department]]);
+  const { body } = detailShell(item, "", [["담당부서", item.department]]);
   body.appendChild(sectionTitle("APPLICATION PROCESS", "신청방법"));
   const process = document.createElement("div");
   process.className = "process-box";
@@ -375,6 +394,7 @@ function renderPermission(item) {
     link.textContent = "관련 사이트 바로가기 ↗";
     body.appendChild(link);
   }
+  if (item.attachments_enabled === false) return;
   body.appendChild(sectionTitle("DOWNLOAD FORMS", "권한신청 서식"));
   renderAttachments(body, item.attachments, "등록된 권한신청 서식이 없습니다.");
 }
@@ -388,16 +408,21 @@ function renderHandbook(item) {
   if (firstPdf) showPdf(body, firstPdf);
 }
 
-function openItem(slug, updateRoute = true) {
+function openItem(slug, updateRoute = true, page = 0) {
   const item = itemsForType().find((entry) => entry.slug === slug);
   if (!item) return showList(updateRoute);
+  state.search = "";
+  state.category = itemCategory(item);
   $("#listView").hidden = true;
+  $("#searchView").hidden = true;
   $("#detailView").hidden = false;
+  $$('[data-type]').forEach((button) => button.classList.toggle("active", button.dataset.type === state.type));
+  renderCategories();
   renderBreadcrumb(item.title);
-  if (state.type === "manual") renderManual(item);
+  if (state.type === "manual") renderManual(item, page);
   else if (state.type === "permission") renderPermission(item);
   else renderHandbook(item);
-  if (updateRoute) setRoute(item.slug);
+  if (updateRoute) setRoute(item.slug, page);
   $("#detailView h2").focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -413,13 +438,215 @@ function renderRelatedLinks() {
     number.textContent = String(index + 1).padStart(2, "0");
     const copy = document.createElement("div");
     const name = document.createElement("strong");
-    name.textContent = site.name;
+    if (site.lines?.length > 1) {
+      site.lines.forEach((line, lineIndex) => {
+        if (lineIndex) name.appendChild(document.createElement("br"));
+        name.appendChild(document.createTextNode(line));
+      });
+      link.title = site.name;
+    } else {
+      name.textContent = site.name;
+    }
     const host = document.createElement("small");
     host.textContent = new URL(site.url).host;
     copy.append(name, host);
     link.append(number, copy);
     list.appendChild(link);
   });
+}
+
+const SEARCH_GROUPS = [
+  { key: "manual", label: "업무매뉴얼" },
+  { key: "source", label: "매뉴얼 원문" },
+  { key: "permission", label: "권한신청서식" },
+  { key: "handbook", label: "업무편람" },
+];
+const GROUP_PREVIEW = 5;
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildMatcher(query) {
+  // PDF에서 꺼낸 글자는 단어 중간에 띄어쓰기가 끼는 경우가 있어, 글자 사이 공백을 허용한다.
+  const tokens = query.trim().split(/\s+/).filter(Boolean).slice(0, 6);
+  const patterns = tokens.map((token) => [...token].map(escapeRegExp).join("\\s*"));
+  return {
+    tokens,
+    test: (text) => patterns.every((pattern) => new RegExp(pattern, "i").test(text)),
+    ranges(text) {
+      const ranges = [];
+      patterns.forEach((pattern) => {
+        for (const match of text.matchAll(new RegExp(pattern, "gi"))) {
+          if (match[0]) ranges.push([match.index, match.index + match[0].length]);
+        }
+      });
+      ranges.sort((a, b) => a[0] - b[0]);
+      return ranges.reduce((merged, range) => {
+        const last = merged[merged.length - 1];
+        if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
+        else merged.push([...range]);
+        return merged;
+      }, []);
+    },
+  };
+}
+
+function highlighted(tag, text, matcher, className = "") {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  let cursor = 0;
+  matcher.ranges(text).forEach(([start, end]) => {
+    if (start > cursor) element.appendChild(document.createTextNode(text.slice(cursor, start)));
+    const mark = document.createElement("mark");
+    mark.textContent = text.slice(start, end);
+    element.appendChild(mark);
+    cursor = end;
+  });
+  if (cursor < text.length) element.appendChild(document.createTextNode(text.slice(cursor)));
+  return element;
+}
+
+function snippet(text, matcher, length = 150) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  const first = matcher.ranges(clean)[0];
+  if (!first || clean.length <= length) return clean.slice(0, length) + (clean.length > length ? "…" : "");
+  const start = Math.max(0, first[0] - 45);
+  const end = Math.min(clean.length, start + length);
+  return `${start ? "…" : ""}${clean.slice(start, end)}${end < clean.length ? "…" : ""}`;
+}
+
+function collectResults(query) {
+  const matcher = buildMatcher(query);
+  const results = { manual: [], source: [], permission: [], handbook: [] };
+  data.documents.forEach((item) => {
+    const text = `${item.title} ${item.category} ${item.department} ${item.summary} ${item.content}`;
+    if (!matcher.test(text)) return;
+    const main = matcher.test(item.summary) ? item.summary : snippet(item.content, matcher);
+    results.manual.push({
+      title: item.title, meta: [item.department], body: main,
+      path: ["업무매뉴얼", item.category], open: () => { state.type = "manual"; openItem(item.slug); },
+    });
+  });
+  sourceIndex.forEach((page) => {
+    if (!matcher.test(page.t)) return;
+    results.source.push({
+      title: `${page.c} · 원본 ${page.p}쪽`, meta: ["업무매뉴얼 원문"], body: snippet(page.t, matcher),
+      path: ["업무매뉴얼", page.c, `${page.p}쪽`], open: () => { state.type = "manual"; openItem(page.s, true, page.p); },
+    });
+  });
+  data.permissions.forEach((item) => {
+    const files = item.attachments.map((file) => file.name).join(" ");
+    const text = `${item.title} ${item.department} ${item.method} ${item.notes.join(" ")} ${files}`;
+    if (!matcher.test(text)) return;
+    const body = [item.method, ...item.notes, files].find((value) => value && matcher.test(value)) || item.method;
+    results.permission.push({
+      title: item.title, meta: [item.department], body: snippet(body, matcher),
+      path: ["권한신청서식", item.title], open: () => { state.type = "permission"; openItem(item.slug); },
+    });
+  });
+  data.handbooks.forEach((item) => {
+    const files = item.attachments.filter((file) => matcher.test(file.name)).map((file) => file.name);
+    if (!matcher.test(item.title) && !files.length) return;
+    results.handbook.push({
+      title: item.title, meta: [`첨부자료 ${item.attachments.length}개`],
+      body: files.length ? files.join(", ") : "등록된 편람 자료를 확인하세요.",
+      path: ["업무편람", item.title], open: () => { state.type = "handbook"; openItem(item.slug); },
+    });
+  });
+  return { matcher, results };
+}
+
+function renderHit(hit, matcher) {
+  const row = document.createElement("li");
+  row.className = "hit";
+  const meta = document.createElement("p");
+  meta.className = "hit-meta";
+  meta.textContent = hit.meta.filter(Boolean).join(" · ");
+  const title = document.createElement("button");
+  title.type = "button";
+  title.className = "hit-title";
+  title.appendChild(highlighted("span", hit.title, matcher));
+  title.addEventListener("click", hit.open);
+  const body = highlighted("p", hit.body, matcher, "hit-body");
+  const path = document.createElement("p");
+  path.className = "hit-path";
+  path.textContent = hit.path.join(" > ");
+  row.append(meta, title, body, path);
+  return row;
+}
+
+function showSearch(query, group = "all", updateRoute = true) {
+  state.search = query;
+  state.group = SEARCH_GROUPS.some((item) => item.key === group) ? group : "all";
+  state.category = "";
+  $("#searchInput").value = query;
+  $("#listView").hidden = true;
+  $("#detailView").hidden = true;
+  const view = $("#searchView");
+  view.hidden = false;
+  view.replaceChildren();
+  $$('[data-type]').forEach((button) => button.classList.remove("active"));
+  renderBreadcrumb("", "통합검색");
+  const { matcher, results } = collectResults(query);
+  const total = SEARCH_GROUPS.reduce((sum, item) => sum + results[item.key].length, 0);
+
+  const summary = document.createElement("div");
+  summary.className = "search-summary";
+  const keyword = document.createElement("em");
+  keyword.textContent = `“${query}”`;
+  const count = document.createElement("strong");
+  count.textContent = total.toLocaleString("ko-KR");
+  summary.append(keyword, " 에 대한 전체 총 ", count, " 건의 결과를 찾았습니다.");
+  view.appendChild(summary);
+
+  const pills = document.createElement("nav");
+  pills.className = "search-pills";
+  pills.setAttribute("aria-label", "검색 결과 구분");
+  [{ key: "all", label: "통합검색" }, ...SEARCH_GROUPS].forEach((item) => {
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.textContent = item.key === "all" ? item.label : `${item.label} ${results[item.key].length}`;
+    pill.classList.toggle("active", state.group === item.key);
+    pill.setAttribute("aria-pressed", String(state.group === item.key));
+    pill.addEventListener("click", () => showSearch(query, item.key));
+    pills.appendChild(pill);
+  });
+  view.appendChild(pills);
+
+  const groups = SEARCH_GROUPS.filter((item) => state.group === "all" || state.group === item.key);
+  const shown = groups.filter((item) => results[item.key].length);
+  if (!shown.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "검색 결과가 없습니다. 띄어쓰기를 줄이거나 더 짧은 단어로 다시 검색해 보세요.";
+    view.appendChild(empty);
+  }
+  shown.forEach((item) => {
+    const section = document.createElement("section");
+    section.className = "search-group";
+    const heading = document.createElement("h3");
+    heading.textContent = item.label;
+    const small = document.createElement("small");
+    small.textContent = `(검색결과 ${results[item.key].length})`;
+    heading.appendChild(small);
+    const list = document.createElement("ol");
+    const hits = state.group === "all" ? results[item.key].slice(0, GROUP_PREVIEW) : results[item.key];
+    hits.forEach((hit) => list.appendChild(renderHit(hit, matcher)));
+    section.append(heading, list);
+    if (state.group === "all" && results[item.key].length > GROUP_PREVIEW) {
+      const more = document.createElement("button");
+      more.type = "button";
+      more.className = "search-more";
+      more.textContent = `${item.label} 결과 ${results[item.key].length}건 모두 보기`;
+      more.addEventListener("click", () => showSearch(query, item.key));
+      section.appendChild(more);
+    }
+    view.appendChild(section);
+  });
+  if (updateRoute) setRoute();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  $("#content").focus({ preventScroll: true });
 }
 
 function closeMenu() {
@@ -432,11 +659,16 @@ function loadRoute() {
   const type = params.get("type");
   state.type = labels[type] ? type : "manual";
   state.category = params.get("category") || "";
-  state.query = params.get("q") || "";
-  $("#searchInput").value = state.query;
+  state.query = "";
+  const search = params.get("search") || params.get("q");
+  if (search) {
+    renderCategories();
+    return showSearch(search, params.get("group") || "all", false);
+  }
+  $("#searchInput").value = "";
   renderCategories();
   const item = params.get("item");
-  if (item) openItem(item, false);
+  if (item) openItem(item, false, Number(params.get("page")) || 0);
   else showList(false);
 }
 
@@ -459,17 +691,9 @@ function bindEvents() {
     event.preventDefault();
     const query = $("#searchInput").value.trim();
     if (!query) return showToast("검색어를 입력하세요.");
-    state.query = query;
-    state.category = "";
-    showList();
+    showSearch(query);
   });
-  $$('[data-popular]').forEach((button) => button.addEventListener("click", () => {
-    state.type = "manual";
-    state.category = "";
-    state.query = button.dataset.popular;
-    $("#searchInput").value = state.query;
-    showList();
-  }));
+  $$('[data-popular]').forEach((button) => button.addEventListener("click", () => showSearch(button.dataset.popular)));
   $("#menuButton").addEventListener("click", () => {
     const panel = $("#categoryPanel");
     panel.classList.toggle("open");

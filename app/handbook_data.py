@@ -14,6 +14,6 @@ HANDBOOK_CATEGORIES = [
         "title": "부동산거래관리시스템(임대차신고·확정일자)",
         "label_lines": ["부동산거래관리시스템", "(임대차신고·확정일자)"],
     },
-    {"slug": "civil-service-window", "title": "민원처리운영창구"},
     {"slug": "klip", "title": "KLIP(토지이용계획확인서)"},
+    {"slug": "civil-service-window", "title": "민원처리운영창구"},
 ]
