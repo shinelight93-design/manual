@@ -55,11 +55,13 @@ button { color: inherit; }
 .brand small { margin-top: 3px; color: var(--taupe); font-size: 10px; font-weight: 700; letter-spacing: .18em; }
 .notice { margin: 0; padding: 12px 18px; border: 1px solid var(--alert-line); border-left: 4px solid var(--alert); border-radius: var(--radius); background: var(--alert-bg); color: var(--ink); font-size: 13px; }
 .notice span { display: block; margin-bottom: 3px; color: var(--alert); font-size: 12px; font-weight: 900; }
+.permission-notice { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 13px 18px; font-size: 14px; }
+.permission-notice span { display: inline; margin: 0; font-size: 13px; }
 .menu-button { display: none; border: 0; border-radius: var(--radius); padding: 10px 13px; background: var(--deep); color: var(--paper); font-weight: 800; }
 
 /* 통합검색 */
 .search-wrap { background: var(--deep); color: var(--paper); }
-.search { min-height: 108px; display: grid; grid-template-columns: var(--title-column, 170px) minmax(360px, 760px) minmax(350px, 1fr); align-items: center; gap: 20px; }
+.search { min-height: 108px; display: grid; grid-template-columns: var(--title-column, 170px) minmax(300px, 760px) auto; align-items: center; gap: 20px; }
 .search-title { justify-self: start; width: var(--title-width, auto); margin-left: var(--title-start, 22px); font-size: 24px; letter-spacing: .05em; text-align: center; white-space: nowrap; }
 .search label { display: grid; grid-template-columns: minmax(0, 1fr) 100px; min-height: 56px; overflow: hidden; border: 1px solid transparent; border-radius: var(--radius); background: var(--paper); }
 .search label:focus-within { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(195, 186, 186, .45); }
@@ -74,7 +76,7 @@ button { color: inherit; }
 .popular-tasks button:hover { border-color: var(--blush); background: rgba(233, 227, 230, .12); }
 
 /* 가로 탭: 모든 탭의 좌우 여백을 같게 */
-.tabs { background: var(--paper); border-bottom: 1px solid var(--line-strong); }
+.tabs { overflow-x: auto; background: var(--paper); border-bottom: 1px solid var(--line-strong); scrollbar-width: thin; }
 .tabs .width { display: flex; min-height: 58px; }
 .tabs button, .tabs a { position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-right: 1px solid var(--line); padding: 0 36px; background: transparent; color: var(--ink-soft); font-size: 14px; font-weight: 700; text-decoration: none; white-space: nowrap; cursor: pointer; }
 .tabs button:first-child { border-left: 1px solid var(--line); }
@@ -141,7 +143,7 @@ main:focus { outline: none; }
 .download-menu > div small { display: block; margin-top: 2px; color: var(--ink-soft); font-size: 11px; font-weight: 500; }
 
 /* 권한신청서식 목록 카드 */
-.permission-card { grid-template-columns: 168px minmax(0, 1fr) 222px; gap: 18px; align-items: center; }
+.permission-card { grid-template-columns: 168px minmax(0, 1fr) 240px; gap: 18px; align-items: center; }
 .permission-card .card-actions { justify-content: flex-end; }
 .permission-card .meta { display: grid; gap: 3px; }
 .permission-card .meta span + span::before { content: none; }
@@ -169,6 +171,7 @@ main:focus { outline: none; }
 .detail-body { padding: 30px 36px 40px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); background: var(--paper); }
 .section-title { display: flex; justify-content: space-between; align-items: end; margin: 4px 0 16px; padding-bottom: 11px; border-bottom: 1px solid var(--line); }
 .section-title h3 { margin: 4px 0 0; color: var(--ink); font-size: 19px; }
+.section-title.plain { margin-bottom: 10px; padding-bottom: 0; border-bottom: 0; }
 .process-box { margin: 0 0 24px; padding: 22px 24px; border-left: 4px solid var(--mauve); border-radius: 0 var(--radius) var(--radius) 0; background: var(--mist); font-size: 15px; font-weight: 600; line-height: 1.8; }
 .notes { margin: 0 0 26px; padding: 18px 22px; border: 1px solid var(--alert-line); border-radius: var(--radius); background: var(--alert-bg); }
 .notes strong { font-size: 14px; }
@@ -235,8 +238,12 @@ footer strong { color: var(--paper); font-size: 14px; }
 .toast { position: fixed; z-index: 50; right: 24px; bottom: 24px; max-width: 360px; padding: 12px 16px; border-radius: var(--radius); background: var(--ink); color: var(--paper); font-size: 13px; opacity: 0; transform: translateY(12px); pointer-events: none; transition: .2s; }
 .toast.show { opacity: 1; transform: none; }
 
+@media (min-width: 1101px) {
+  .popular-tasks { min-width: max-content; }
+}
 @media (max-width: 1240px) {
-  .permission-card { grid-template-columns: minmax(0, 1fr) 222px; }
+  .tabs button, .tabs a { padding: 0 22px; }
+  .permission-card { grid-template-columns: minmax(0, 1fr) 240px; }
   .permission-card .permission-info { grid-column: 1 / -1; grid-row: 2; padding: 14px 0 0; border-top: 1px solid var(--line); border-left: 0; }
 }
 @media (max-width: 1100px) {

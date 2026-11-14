@@ -9,8 +9,15 @@ const state = {
   group: "all",
 };
 
+const MANUAL_TYPES = ["resident", "seal", "manual"];
+const isManual = (type = state.type) => MANUAL_TYPES.includes(type);
+
 const labels = {
-  manual: { title: "업무매뉴얼", category: "업무 매뉴얼",
+  resident: { title: "주민등록 업무매뉴얼", category: "주민등록 업무",
+    description: "주민등록 담당자의 일일·월별·분기별 업무 처리 방법 안내" },
+  seal: { title: "인감 업무매뉴얼", category: "인감 업무",
+    description: "인감 담당자의 일일·주간·월별 업무 처리 방법 안내" },
+  manual: { title: "통합민원 업무매뉴얼", category: "업무 매뉴얼",
     description: "시스템 사용 및 업무 처리 방법 안내" },
   permission: { title: "권한신청서식", category: "권한 신청",
     description: "통합민원대 시스템 권한 신청을 위한 방법 및 서식" },
@@ -42,16 +49,20 @@ function showToast(message) {
 function itemsForType() {
   if (state.type === "permission") return data.permissions;
   if (state.type === "handbook") return data.handbooks;
-  return data.documents;
+  return data.documents.filter((item) => (item.set || "manual") === state.type);
+}
+
+function sourceFileFor(type) {
+  return data.source_files?.[type] || (type === "manual" ? data.source_manual_file : null);
 }
 
 function itemCategory(item) {
-  if (state.type === "manual") return item.category;
+  if (isManual()) return item.category;
   return item.slug;
 }
 
 function itemSearchText(item) {
-  if (state.type === "manual") return `${item.title} ${item.category} ${item.department} ${item.summary} ${item.content}`;
+  if (isManual()) return `${item.title} ${item.category} ${item.department} ${item.summary} ${item.content}`;
   if (state.type === "permission") {
     return `${item.title} ${item.department} ${item.method} ${item.notes.join(" ")} ${item.attachments.map((file) => file.name).join(" ")}`;
   }
@@ -110,8 +121,8 @@ function renderBreadcrumb(current = "", section = "") {
 function renderCategories() {
   const list = $("#categoryList");
   list.replaceChildren();
-  const items = state.type === "manual"
-    ? [...new Set(data.documents.map((item) => item.category))].map((name) => ({ key: name, name }))
+  const items = isManual()
+    ? [...new Set(itemsForType().map((item) => item.category))].map((name) => ({ key: name, name }))
     : itemsForType().map((item) => ({ key: item.slug, name: item.title, lines: item.label_lines }));
   $("#categoryTitle").textContent = labels[state.type].title;
   $("#activeCount").textContent = itemsForType().length;
@@ -152,13 +163,13 @@ function renderCategories() {
 }
 
 function summaryFor(item) {
-  if (state.type === "manual") return item.summary;
+  if (isManual()) return item.summary;
   if (state.type === "permission") return `${item.department} 담당 · ${item.method.split("\n")[0]}`;
   return item.attachments.length ? `등록된 편람 ${item.attachments.length}개` : "등록된 편람이 없습니다.";
 }
 
 function metaFor(item) {
-  if (state.type === "manual") return [item.category, item.department];
+  if (isManual()) return [item.category, item.department];
   if (state.type === "permission") return [item.department, `첨부서식 ${item.attachments.length}개`];
   const total = item.attachments.reduce((sum, file) => sum + file.size, 0);
   return [`첨부자료 ${item.attachments.length}개`, total ? formatBytes(total) : "자료 없음"];
@@ -243,11 +254,21 @@ function showList(updateRoute = true) {
   $$('[data-type]').forEach((button) => button.classList.toggle("active", button.dataset.type === state.type));
   const list = $("#resultList");
   list.replaceChildren();
-  if (state.type === "manual" && !state.category && !state.query && data.source_manual_file) {
+  if (state.type === "permission" && !state.category && !state.query && data.permission_notice) {
+    const notice = document.createElement("p");
+    notice.className = "notice permission-notice";
+    notice.setAttribute("role", "note");
+    const label = document.createElement("span");
+    label.textContent = data.permission_notice.label;
+    notice.append(label, data.permission_notice.text);
+    list.appendChild(notice);
+  }
+  const sourceFile = sourceFileFor(state.type);
+  if (isManual() && !state.category && !state.query && sourceFile) {
     const block = document.createElement("section");
     block.className = "source-block";
-    block.appendChild(sectionTitle("업무매뉴얼 원본"));
-    renderAttachments(block, [{ ...data.source_manual_file, type: "pdf" }], "");
+    block.appendChild(sectionTitle(`${labels[state.type].title} 원본`));
+    renderAttachments(block, [{ ...sourceFile, type: "pdf" }], "");
     list.appendChild(block);
   }
   if (!items.length) {
@@ -280,6 +301,13 @@ function showList(updateRoute = true) {
     actions.appendChild(open);
     if (state.type === "permission") {
       card.classList.add("permission-card");
+      if (item.title_lines?.length > 1) {
+        title.replaceChildren();
+        item.title_lines.forEach((line, lineIndex) => {
+          if (lineIndex) title.appendChild(document.createElement("br"));
+          title.appendChild(document.createTextNode(line));
+        });
+      }
       copy.append(title, meta);
       card.append(copy, permissionInfo(item), actions);
       if (item.attachments.length) actions.appendChild(formDownload(item));
@@ -321,9 +349,9 @@ function detailShell(item, description, meta) {
   return { article, body, title };
 }
 
-function sectionTitle(title) {
+function sectionTitle(title, variant = "") {
   const heading = document.createElement("div");
-  heading.className = "section-title";
+  heading.className = variant ? `section-title ${variant}` : "section-title";
   const copy = document.createElement("div");
   const strong = document.createElement("h3");
   strong.textContent = title;
@@ -427,7 +455,7 @@ function pageLabel(start, end) {
 }
 
 function renderManual(item, page = 0) {
-  const { body } = detailShell(item, item.summary, [["업무분류", item.category], ["담당부서", item.department]]);
+  const { body } = detailShell(item, item.summary, [["업무분류", item.category], [item.department_label || "담당부서", item.department]]);
   if (!item.source_file || item.source_pages.length !== 2) return;
   const [start, end] = item.source_pages;
   const target = page >= start && page <= end ? page : start;
@@ -436,7 +464,7 @@ function renderManual(item, page = 0) {
   const toolbar = document.createElement("div");
   toolbar.className = "pdf-toolbar";
   const name = document.createElement("strong");
-  name.textContent = `통합민원 업무매뉴얼 · ${pageLabel(start, end)}`;
+  name.textContent = `${labels[state.type].title} · ${pageLabel(start, end)}`;
   const open = document.createElement("a");
   open.href = item.source_file;
   open.target = "_blank";
@@ -460,7 +488,7 @@ function renderManual(item, page = 0) {
 
 function renderPermission(item) {
   const { body } = detailShell(item, "", [["담당부서", item.department]]);
-  body.appendChild(sectionTitle("신청방법"));
+  body.appendChild(sectionTitle("신청방법", "plain"));
   const process = document.createElement("div");
   process.className = "process-box";
   methodLines(process, item.method);
@@ -514,7 +542,7 @@ function openItem(slug, updateRoute = true, page = 0) {
   $$('[data-type]').forEach((button) => button.classList.toggle("active", button.dataset.type === state.type));
   renderCategories();
   renderBreadcrumb(item.title);
-  if (state.type === "manual") renderManual(item, page);
+  if (isManual()) renderManual(item, page);
   else if (state.type === "permission") renderPermission(item);
   else renderHandbook(item);
   if (updateRoute) setRoute(item.slug, page);
@@ -619,16 +647,18 @@ function collectResults(query) {
     const text = `${item.title} ${item.category} ${item.department} ${item.summary} ${item.content}`;
     if (!matcher.test(text)) return;
     const main = matcher.test(item.summary) ? item.summary : snippet(item.content, matcher);
+    const type = item.set || "manual";
     results.manual.push({
       title: item.title, meta: [item.department], body: main,
-      path: ["업무매뉴얼", item.category], open: () => { state.type = "manual"; openItem(item.slug); },
+      path: [labels[type].title, item.category], open: () => { state.type = type; openItem(item.slug); },
     });
   });
   sourceIndex.forEach((page) => {
     if (!matcher.test(page.t)) return;
+    const type = page.m || "manual";
     results.source.push({
-      title: `${page.c} · 원본 ${page.p}쪽`, meta: ["업무매뉴얼 원문"], body: snippet(page.t, matcher),
-      path: ["업무매뉴얼", page.c, `${page.p}쪽`], open: () => { state.type = "manual"; openItem(page.s, true, page.p); },
+      title: `${page.c} · 원본 ${page.p}쪽`, meta: [`${labels[type].title} 원문`], body: snippet(page.t, matcher),
+      path: [labels[type].title, page.c, `${page.p}쪽`], open: () => { state.type = type; openItem(page.s, true, page.p); },
     });
   });
   data.permissions.forEach((item) => {
@@ -805,7 +835,7 @@ function bindEvents() {
 function alignSearchTitle() {
   // '통합검색' 글자를 아래 '업무매뉴얼' 탭 칸의 가운데에 맞춘다(넓은 화면에서만).
   const form = $("#searchForm");
-  const tab = $('[data-type="manual"]');
+  const tab = $(".tabs .width > :first-child");
   if (!form || !tab || window.innerWidth <= 760) {
     form?.style.removeProperty("--title-column");
     form?.style.removeProperty("--title-start");

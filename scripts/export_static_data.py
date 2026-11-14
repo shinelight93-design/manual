@@ -87,10 +87,47 @@ RELATED_SITES = [
     {"name": "나라배움터", "url": "https://logodi.nhi.go.kr/"},
 ]
 
-# 권한신청서식 신청방법 줄바꿈 (화면 표시용)
-PERMISSION_METHOD_OVERRIDES = {
-    "civil-service-window": "시스템 사용자 등록 ➜ 교육수료\n➜ 서식 작성 후 교육수료증과 함께 공문발송",
+# 권한신청서식 화면 조정
+#  method: 신청방법 문구 교체 / notes_into_method: 주의사항을 신청방법 아래로 옮기고 주의사항 칸 없앰
+#  title_lines: 전체자료 카드 제목 줄바꿈
+PERMISSION_OVERRIDES = {
+    "certificate": {"notes_into_method": True},
+    "civil-service-window": {"method": "시스템 사용자 등록 ➜ 교육수료 ➜ 서식 작성 후 교육수료증과 함께 공문발송"},
+    "official-price": {"notes_into_method": True, "title_lines": ["부동산공시가격", "시스템"]},
+    "donggu-homepage": {"notes_into_method": True},
+    "real-estate-transaction": {"title_lines": ["부동산거래관리", "시스템"]},
+    "real-estate-ledger": {"title_lines": ["부동산종합공부", "시스템"]},
 }
+PERMISSION_NOTICE = {
+    "label": "공통사항",
+    "text": "시스템 담당부서의 ‘권한신청 안내공문’과 전임자의 ‘권한신청공문’ 확인.",
+}
+
+# 담당자별 업무매뉴얼 (manuals/ 폴더의 PDF, 장별로 나눠 보여줌)
+MANUALS_DIR = ROOT / "manuals"
+MANUAL_SETS = [
+    {
+        "key": "resident", "file": "resident-manual.pdf", "name": "주민등록 담당자 업무매뉴얼.pdf",
+        "department": "주민등록 담당자",
+        "chapters": [
+            ("일일업무", "주민등록시스템 일일처리현황, 주민등록증 발급대장 출력, 주민등록증 수령 및 증수령 문자 안내", 2, 2),
+            ("월 업무", "공동주택인구현황, 인구동향조사, 행정통별인구현황, 주민등록증 발급상황, 회수 주민등록증 인계, "
+                     "전출입사후확인서 교부, 신규주민등록증 발급 통지, 미발급자 발급 통지", 3, 6),
+            ("분기별 업무", "거주불명자 행정상 관리주소 이전, 주민등록 사실조사", 7, 7),
+            ("기타 업무", "11호 통보, 거주불명 등록, 거주불명자 재등록, 신규 주민등록증 발급 지연, 과태료 고지서 출력 및 납부, "
+                      "습득 주민등록증, 장기 미수령증, 등본 상 외국인 세대원 등록", 8, 21),
+        ],
+    },
+    {
+        "key": "seal", "file": "seal-manual.pdf", "name": "인감 담당자 업무매뉴얼.pdf",
+        "department": "인감 담당자",
+        "chapters": [
+            ("일일업무", "세외수입(일일마감)", 2, 3),
+            ("일주일마다", "무인민원발급기 마감, 인감증명서 대리발급사실통보 등기 송부, 인감대장 송부·수신", 4, 5),
+            ("월마다", "월보 제출, 대학민원 수수료 납부, 주민등록증 등기우편 수수료 납부", 6, 7),
+        ],
+    },
+]
 
 HANDBOOK_LABEL_LINES = {
     "inheritance-one-stop": ["안심상속 원스톱서비스", "재산조회"],
@@ -132,7 +169,16 @@ def build_documents() -> list[dict]:
             old, new = override["department_replace"]
             document["department"] = document["department"].replace(old, new)
         document["source_pages"] = list(SOURCE_PAGES.get(original_category, ()))
+        document["set"] = "manual"
         documents.append(document)
+    for manual in MANUAL_SETS:
+        for index, (title, summary, start, end) in enumerate(manual["chapters"], start=1):
+            documents.append({
+                "slug": f"{manual['key']}-{index:02d}", "set": manual["key"],
+                "category": title, "title": title, "summary": summary,
+                "department": manual["department"], "department_label": "담당",
+                "content": summary, "source_pages": [start, end],
+            })
     return documents
 
 
@@ -142,44 +188,43 @@ def page_text(page) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def build_source_assets(documents: list[dict], source_manual: Path) -> tuple[dict | None, list[dict]]:
-    """업무별 원문 PDF를 잘라 저장하고, 원문 검색 색인을 만든다."""
-    if MANUAL_SLICE_DIR.exists():
-        shutil.rmtree(MANUAL_SLICE_DIR)
+def manual_date(reader: PdfReader, path: Path) -> str:
+    try:
+        made = reader.metadata.modification_date or reader.metadata.creation_date
+    except Exception:  # noqa: BLE001 - 작성일이 없거나 형식이 다르면 파일 날짜 사용
+        made = None
+    if made and made.tzinfo:
+        return made.astimezone(KST).date().isoformat()
+    if made:
+        return made.date().isoformat()
+    return date.fromtimestamp(path.stat().st_mtime).isoformat()
+
+
+def slice_manual(set_key: str, documents: list[dict], source_manual: Path, name: str, url: str) -> tuple[dict | None, list[dict]]:
+    """한 매뉴얼을 업무(장)별 PDF로 잘라 저장하고, 원문 검색 색인을 만든다."""
+    members = [document for document in documents if document["set"] == set_key]
     if not source_manual.is_file():
         return None, []
-    MANUAL_SLICE_DIR.mkdir(parents=True)
     reader = PdfReader(source_manual)
     total = len(reader.pages)
     index: list[dict] = []
-    for document in documents:
+    for document in members:
         if len(document["source_pages"]) != 2:
             continue
         start, end = document["source_pages"]
         if not 1 <= start <= end <= total:
-            raise ValueError(f"{document['category']}: 원본은 {total}쪽까지 있습니다 ({start}~{end}쪽 지정)")
+            raise ValueError(f"{document['category']}: {name}은 {total}쪽까지 있습니다 ({start}~{end}쪽 지정)")
         writer = PdfWriter()
         for number in range(start, end + 1):
             writer.add_page(reader.pages[number - 1])
-            index.append({"p": number, "s": document["slug"], "c": document["category"],
+            index.append({"m": set_key, "p": number, "s": document["slug"], "c": document["category"],
                           "t": page_text(reader.pages[number - 1])})
         destination = MANUAL_SLICE_DIR / f"{document['slug']}.pdf"
         with destination.open("wb") as handle:
             writer.write(handle)
         document["source_file"] = f"assets/manual/{destination.name}"
-    stat = source_manual.stat()
-    try:
-        made = reader.metadata.modification_date or reader.metadata.creation_date
-    except Exception:  # noqa: BLE001 - 작성일이 없거나 형식이 다르면 파일 날짜 사용
-        made = None
-    info = {
-        "name": SOURCE_MANUAL_NAME,
-        "url": "assets/source-manual.pdf",
-        "size": stat.st_size,
-        "date": (made.astimezone(KST).date() if made and made.tzinfo else made.date() if made
-                 else date.fromtimestamp(stat.st_mtime)).isoformat(),
-        "pages": total,
-    }
+    info = {"name": name, "url": url, "size": source_manual.stat().st_size,
+            "date": manual_date(reader, source_manual), "pages": total}
     return info, index
 
 
@@ -192,17 +237,44 @@ def write_site(payload: dict, search_index: list[dict]) -> None:
 
 def finalize(payload: dict) -> None:
     documents = build_documents()
-    source_info, search_index = build_source_assets(documents, ASSET_DIR / "source-manual.pdf")
-    payload["documents"] = documents
-    payload["source_manual"] = source_info["url"] if source_info else None
-    payload["source_manual_file"] = source_info
+    if MANUAL_SLICE_DIR.exists():
+        shutil.rmtree(MANUAL_SLICE_DIR)
+    MANUAL_SLICE_DIR.mkdir(parents=True)
+    source_files: dict[str, dict] = {}
+    search_index: list[dict] = []
+    info, index = slice_manual("manual", documents, ASSET_DIR / "source-manual.pdf",
+                               SOURCE_MANUAL_NAME, "assets/source-manual.pdf")
+    if info:
+        source_files["manual"] = info
+        search_index += index
+    for manual in MANUAL_SETS:
+        source = MANUALS_DIR / manual["file"]
+        if not source.is_file():
+            continue
+        copy_asset(source, ASSET_DIR / manual["file"])
+        info, index = slice_manual(manual["key"], documents, ASSET_DIR / manual["file"],
+                                   manual["name"], f"assets/{manual['file']}")
+        if info:
+            source_files[manual["key"]] = info
+            search_index += index
+    payload["documents"] = [document for document in documents if document.get("source_file") or document["set"] == "manual"]
+    payload["source_files"] = source_files
+    payload["source_manual"] = source_files.get("manual", {}).get("url")
+    payload["source_manual_file"] = source_files.get("manual")
     payload["handbooks"] = ordered_handbooks(payload["handbooks"])
     for handbook in payload["handbooks"]:
         if handbook["slug"] in HANDBOOK_LABEL_LINES:
             handbook["label_lines"] = HANDBOOK_LABEL_LINES[handbook["slug"]]
     for permission in payload["permissions"]:
-        if permission["slug"] in PERMISSION_METHOD_OVERRIDES:
-            permission["method"] = PERMISSION_METHOD_OVERRIDES[permission["slug"]]
+        override = PERMISSION_OVERRIDES.get(permission["slug"], {})
+        if "method" in override:
+            permission["method"] = override["method"]
+        if override.get("notes_into_method") and permission["notes"]:
+            permission["method"] = "\n".join([permission["method"], *permission["notes"]])
+            permission["notes"] = []
+        if "title_lines" in override:
+            permission["title_lines"] = override["title_lines"]
+    payload["permission_notice"] = PERMISSION_NOTICE
     payload["related_sites"] = RELATED_SITES
     write_site(payload, search_index)
 
