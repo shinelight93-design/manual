@@ -105,20 +105,22 @@ PERMISSION_NOTICE = {
 }
 
 # 주민등록 담당자 월간 업무 달력 (주민등록 업무매뉴얼 전체자료 화면)
-#  weeks: 주별 일정 / start·end: 막대가 걸치는 날짜 / label: 기간 안내
+#  weeks: 주별 일정 / start·end: 막대가 걸치는 날짜 / label: 기간 안내 / columns: 업무 목록 칸 수
+#  last_weekday: 화면에서 이번 달 마지막 평일을 계산해 그 날짜 칸과 맨 아래 줄에 함께 표시
 RESIDENT_CALENDAR = {
     "title": "주민등록 담당자 월간 업무 달력",
     "weeks": [
         {"days": [1, 7], "events": [
-            {"start": 1, "end": 5, "label": "매달 5일 이내",
+            {"start": 1, "end": 5, "label": "매달 5일 이내", "columns": 2,
              "items": ["국가데이터처 인구동향조사", "행정통별인구현황", "주민등록 및 발급상황보고", "회수 주민등록증 인계"]},
             {"start": 1, "end": 7, "label": "매달 초", "items": ["주민등록증 미발급자 발급 통지"]},
         ]},
         {"days": [8, 14], "events": []},
         {"days": [15, 21], "events": [
-            {"start": 19, "end": 21, "label": "매달 중순 이후", "items": ["신규주민등록증 발급 통지"], "continues": True},
+            {"start": 15, "end": 21, "label": "매달 중순 이후", "items": ["신규주민등록증 발급 통지"], "continues": True},
         ]},
         {"days": [22, 28], "events": []},
+        {"days": [29, 31], "events": []},
     ],
     "last_weekday": {"label": "매달 마지막 평일", "items": ["공동주택 인구현황"]},
 }

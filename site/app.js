@@ -199,6 +199,7 @@ function renderMethod(container, item) {
 function renderCalendar(calendar) {
   const today = new Date();
   const day = today.getDate();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const lastWeekday = (() => {
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     while (last.getDay() === 0 || last.getDay() === 6) last.setDate(last.getDate() - 1);
@@ -222,20 +223,31 @@ function renderCalendar(calendar) {
     row.className = "cal-week";
     const days = document.createElement("div");
     days.className = "cal-days";
-    for (let date = first; date <= last; date += 1) {
+    for (let column = 0; column < 7; column += 1) {
+      const date = first + column;
       const cell = document.createElement("span");
-      cell.textContent = date;
-      if (date === day) {
-        cell.className = "today";
-        cell.title = "오늘";
+      if (date <= last) {
+        cell.textContent = date;
+        if (date > daysInMonth) {
+          cell.className = "outside";
+          cell.title = "이번 달에는 없는 날짜";
+        } else if (date === day) {
+          cell.className = "today";
+          cell.title = "오늘";
+        }
       }
       days.appendChild(cell);
     }
     const events = document.createElement("div");
     events.className = "cal-events";
-    week.events.forEach((event) => {
+    const weekEvents = [...week.events];
+    if (calendar.last_weekday && lastWeekday >= first && lastWeekday <= last) {
+      weekEvents.push({ start: lastWeekday, end: lastWeekday, label: "마지막 평일",
+        items: calendar.last_weekday.items, marker: true });
+    }
+    weekEvents.forEach((event) => {
       const box = document.createElement("div");
-      box.className = "cal-event";
+      box.className = event.marker ? "cal-event marker" : "cal-event";
       if (day >= event.start && (event.continues || day <= event.end)) box.classList.add("now");
       box.style.gridColumn = `${event.start - first + 1} / ${event.end - first + 2}`;
       const label = document.createElement("strong");
@@ -243,12 +255,14 @@ function renderCalendar(calendar) {
       const bar = document.createElement("span");
       bar.className = "cal-bar";
       const list = document.createElement("ul");
+      if (event.columns > 1) list.style.setProperty("--columns", event.columns);
       event.items.forEach((text) => {
         const item = document.createElement("li");
         item.textContent = text;
         list.appendChild(item);
       });
-      box.append(label, bar, list);
+      if (event.marker) box.append(label, list);
+      else box.append(label, bar, list);
       events.appendChild(box);
     });
     row.append(days, events);
@@ -257,7 +271,9 @@ function renderCalendar(calendar) {
   if (calendar.last_weekday) {
     const lastRow = document.createElement("div");
     lastRow.className = "cal-last";
-    if (day === lastWeekday) lastRow.classList.add("now");
+    const card = document.createElement("div");
+    card.className = "cal-last-card";
+    if (day === lastWeekday) card.classList.add("now");
     const label = document.createElement("strong");
     label.textContent = `${calendar.last_weekday.label} (이번 달 ${lastWeekday}일)`;
     const list = document.createElement("ul");
@@ -266,7 +282,8 @@ function renderCalendar(calendar) {
       item.textContent = text;
       list.appendChild(item);
     });
-    lastRow.append(label, list);
+    card.append(label, list);
+    lastRow.appendChild(card);
     grid.appendChild(lastRow);
   }
   scroll.appendChild(grid);
@@ -356,6 +373,8 @@ function showList(updateRoute = true) {
     notice.append(label, data.permission_notice.text);
     list.appendChild(notice);
   }
+  const calendar = data.calendars?.[state.type];
+  if (calendar && !state.category && !state.query) list.appendChild(renderCalendar(calendar));
   const sourceFile = sourceFileFor(state.type);
   if (isManual() && !state.category && !state.query && sourceFile) {
     const block = document.createElement("section");
@@ -364,8 +383,6 @@ function showList(updateRoute = true) {
     renderAttachments(block, [{ ...sourceFile, type: "pdf" }], "");
     list.appendChild(block);
   }
-  const calendar = data.calendars?.[state.type];
-  if (calendar && !state.category && !state.query) list.appendChild(renderCalendar(calendar));
   if (!items.length) {
     const empty = document.createElement("div");
     empty.className = "empty";
