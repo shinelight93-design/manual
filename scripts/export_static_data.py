@@ -89,18 +89,38 @@ RELATED_SITES = [
 
 # 권한신청서식 화면 조정
 #  method: 신청방법 문구 교체 / notes_into_method: 주의사항을 신청방법 아래로 옮기고 주의사항 칸 없앰
+#  notes_as_tips: 주의사항을 신청방법 아래 작은 글씨(∎)로 옮김 / attachments_enabled: 서식 칸 표시 여부
 #  title_lines: 전체자료 카드 제목 줄바꿈
 PERMISSION_OVERRIDES = {
-    "certificate": {"notes_into_method": True},
+    "certificate": {"notes_as_tips": True},
     "civil-service-window": {"method": "시스템 사용자 등록 ➜ 교육수료 ➜ 서식 작성 후 교육수료증과 함께 공문발송"},
     "official-price": {"notes_into_method": True, "title_lines": ["부동산공시가격", "시스템"]},
-    "donggu-homepage": {"notes_into_method": True},
+    "donggu-homepage": {"notes_as_tips": True, "attachments_enabled": False},
     "real-estate-transaction": {"title_lines": ["부동산거래관리", "시스템"]},
     "real-estate-ledger": {"title_lines": ["부동산종합공부", "시스템"]},
 }
 PERMISSION_NOTICE = {
     "label": "공통사항",
     "text": "시스템 담당부서의 ‘권한신청 안내공문’과 전임자의 ‘권한신청공문’ 확인.",
+}
+
+# 주민등록 담당자 월간 업무 달력 (주민등록 업무매뉴얼 전체자료 화면)
+#  weeks: 주별 일정 / start·end: 막대가 걸치는 날짜 / label: 기간 안내
+RESIDENT_CALENDAR = {
+    "title": "주민등록 담당자 월간 업무 달력",
+    "weeks": [
+        {"days": [1, 7], "events": [
+            {"start": 1, "end": 5, "label": "매달 5일 이내",
+             "items": ["국가데이터처 인구동향조사", "행정통별인구현황", "주민등록 및 발급상황보고", "회수 주민등록증 인계"]},
+            {"start": 1, "end": 7, "label": "매달 초", "items": ["주민등록증 미발급자 발급 통지"]},
+        ]},
+        {"days": [8, 14], "events": []},
+        {"days": [15, 21], "events": [
+            {"start": 19, "end": 21, "label": "매달 중순 이후", "items": ["신규주민등록증 발급 통지"], "continues": True},
+        ]},
+        {"days": [22, 28], "events": []},
+    ],
+    "last_weekday": {"label": "매달 마지막 평일", "items": ["공동주택 인구현황"]},
 }
 
 # 담당자별 업무매뉴얼 (manuals/ 폴더의 PDF, 장별로 나눠 보여줌)
@@ -110,21 +130,21 @@ MANUAL_SETS = [
         "key": "resident", "file": "resident-manual.pdf", "name": "주민등록 담당자 업무매뉴얼.pdf",
         "department": "주민등록 담당자",
         "chapters": [
-            ("일일업무", "주민등록시스템 일일처리현황, 주민등록증 발급대장 출력, 주민등록증 수령 및 증수령 문자 안내", 2, 2),
-            ("월 업무", "공동주택인구현황, 인구동향조사, 행정통별인구현황, 주민등록증 발급상황, 회수 주민등록증 인계, "
+            ("일간 업무", "주민등록시스템 일일처리현황, 주민등록증 발급대장 출력, 주민등록증 수령 및 증수령 문자 안내", 2, 2),
+            ("월간 업무", "공동주택인구현황, 인구동향조사, 행정통별인구현황, 주민등록증 발급상황, 회수 주민등록증 인계, "
                      "전출입사후확인서 교부, 신규주민등록증 발급 통지, 미발급자 발급 통지", 3, 6),
-            ("분기별 업무", "거주불명자 행정상 관리주소 이전, 주민등록 사실조사", 7, 7),
-            ("기타 업무", "11호 통보, 거주불명 등록, 거주불명자 재등록, 신규 주민등록증 발급 지연, 과태료 고지서 출력 및 납부, "
-                      "습득 주민등록증, 장기 미수령증, 등본 상 외국인 세대원 등록", 8, 21),
+            ("분기 업무", "거주불명자 행정상 관리주소 이전, 주민등록 사실조사", 7, 7),
+            ("수시 업무", "11호 통보, 거주불명 등록, 거주불명자 재등록, 신규 주민등록증 발급 지연, 과태료 고지서 출력 및 납부, "
+                      "습득 주민등록증,\n장기 미수령증, 등본 상 외국인 세대원 등록", 8, 21),
         ],
     },
     {
         "key": "seal", "file": "seal-manual.pdf", "name": "인감 담당자 업무매뉴얼.pdf",
         "department": "인감 담당자",
         "chapters": [
-            ("일일업무", "세외수입(일일마감)", 2, 3),
-            ("일주일마다", "무인민원발급기 마감, 인감증명서 대리발급사실통보 등기 송부, 인감대장 송부·수신", 4, 5),
-            ("월마다", "월보 제출, 대학민원 수수료 납부, 주민등록증 등기우편 수수료 납부", 6, 7),
+            ("일간 업무", "세외수입(일일마감)", 2, 3),
+            ("주간 업무", "무인민원발급기 마감, 인감증명서 대리발급사실통보 등기 송부, 인감대장 송부·수신", 4, 5),
+            ("월간 업무", "월보 제출, 대학민원 수수료 납부, 주민등록증 등기우편 수수료 납부", 6, 7),
         ],
     },
 ]
@@ -265,16 +285,28 @@ def finalize(payload: dict) -> None:
     for handbook in payload["handbooks"]:
         if handbook["slug"] in HANDBOOK_LABEL_LINES:
             handbook["label_lines"] = HANDBOOK_LABEL_LINES[handbook["slug"]]
+    originals = {item["slug"]: item for item in PERMISSION_DOCUMENTS}
     for permission in payload["permissions"]:
+        if permission["slug"] in originals:
+            original = originals[permission["slug"]]
+            permission["method"], permission["notes"] = original["method"], list(original["notes"])
+            permission["attachments_enabled"] = original.get("attachments_enabled", True)
+            permission.pop("method_tips", None)
         override = PERMISSION_OVERRIDES.get(permission["slug"], {})
         if "method" in override:
             permission["method"] = override["method"]
         if override.get("notes_into_method") and permission["notes"]:
             permission["method"] = "\n".join([permission["method"], *permission["notes"]])
             permission["notes"] = []
+        if override.get("notes_as_tips") and permission["notes"]:
+            permission["method_tips"] = permission["notes"]
+            permission["notes"] = []
+        if "attachments_enabled" in override:
+            permission["attachments_enabled"] = override["attachments_enabled"]
         if "title_lines" in override:
             permission["title_lines"] = override["title_lines"]
     payload["permission_notice"] = PERMISSION_NOTICE
+    payload["calendars"] = {"resident": RESIDENT_CALENDAR}
     payload["related_sites"] = RELATED_SITES
     write_site(payload, search_index)
 

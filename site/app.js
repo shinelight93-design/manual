@@ -14,9 +14,9 @@ const isManual = (type = state.type) => MANUAL_TYPES.includes(type);
 
 const labels = {
   resident: { title: "주민등록 업무매뉴얼", category: "주민등록 업무",
-    description: "주민등록 담당자의 일일·월별·분기별 업무 처리 방법 안내" },
+    description: "주민등록 담당자의 일간·월간·분기·수시 업무 처리 방법 안내" },
   seal: { title: "인감 업무매뉴얼", category: "인감 업무",
-    description: "인감 담당자의 일일·주간·월별 업무 처리 방법 안내" },
+    description: "인감 담당자의 일간·주간·월간 업무 처리 방법 안내" },
   manual: { title: "통합민원 업무매뉴얼", category: "업무 매뉴얼",
     description: "시스템 사용 및 업무 처리 방법 안내" },
   permission: { title: "권한신청서식", category: "권한 신청",
@@ -185,12 +185,105 @@ function methodLines(container, text) {
   return container;
 }
 
+function renderMethod(container, item) {
+  methodLines(container, item.method);
+  (item.method_tips || []).forEach((tip) => {
+    const row = document.createElement("span");
+    row.className = "method-line method-tip";
+    row.textContent = `∎ ${tip}`;
+    container.appendChild(row);
+  });
+  return container;
+}
+
+function renderCalendar(calendar) {
+  const today = new Date();
+  const day = today.getDate();
+  const lastWeekday = (() => {
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    while (last.getDay() === 0 || last.getDay() === 6) last.setDate(last.getDate() - 1);
+    return last.getDate();
+  })();
+  const block = document.createElement("section");
+  block.className = "calendar-block";
+  const head = document.createElement("div");
+  head.className = "calendar-head";
+  const title = document.createElement("h3");
+  title.textContent = calendar.title;
+  const note = document.createElement("p");
+  head.append(title, note);
+  const scroll = document.createElement("div");
+  scroll.className = "calendar-scroll";
+  const grid = document.createElement("div");
+  grid.className = "calendar";
+  calendar.weeks.forEach((week) => {
+    const [first, last] = week.days;
+    const row = document.createElement("div");
+    row.className = "cal-week";
+    const days = document.createElement("div");
+    days.className = "cal-days";
+    for (let date = first; date <= last; date += 1) {
+      const cell = document.createElement("span");
+      cell.textContent = date;
+      if (date === day) {
+        cell.className = "today";
+        cell.title = "오늘";
+      }
+      days.appendChild(cell);
+    }
+    const events = document.createElement("div");
+    events.className = "cal-events";
+    week.events.forEach((event) => {
+      const box = document.createElement("div");
+      box.className = "cal-event";
+      if (day >= event.start && (event.continues || day <= event.end)) box.classList.add("now");
+      box.style.gridColumn = `${event.start - first + 1} / ${event.end - first + 2}`;
+      const label = document.createElement("strong");
+      label.textContent = event.label;
+      const bar = document.createElement("span");
+      bar.className = "cal-bar";
+      const list = document.createElement("ul");
+      event.items.forEach((text) => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        list.appendChild(item);
+      });
+      box.append(label, bar, list);
+      events.appendChild(box);
+    });
+    row.append(days, events);
+    grid.appendChild(row);
+  });
+  if (calendar.last_weekday) {
+    const lastRow = document.createElement("div");
+    lastRow.className = "cal-last";
+    if (day === lastWeekday) lastRow.classList.add("now");
+    const label = document.createElement("strong");
+    label.textContent = `${calendar.last_weekday.label} (이번 달 ${lastWeekday}일)`;
+    const list = document.createElement("ul");
+    calendar.last_weekday.items.forEach((text) => {
+      const item = document.createElement("li");
+      item.textContent = text;
+      list.appendChild(item);
+    });
+    lastRow.append(label, list);
+    grid.appendChild(lastRow);
+  }
+  scroll.appendChild(grid);
+  const dateText = `오늘(${today.getMonth() + 1}월 ${day}일)`;
+  note.textContent = grid.querySelector(".now")
+    ? `${dateText} 처리할 업무를 진하게 표시했습니다.`
+    : `${dateText}은 정해진 월간 일정이 없습니다.`;
+  block.append(head, scroll);
+  return block;
+}
+
 function permissionInfo(item) {
   const info = document.createElement("dl");
   info.className = "permission-info";
   const methodLabel = document.createElement("dt");
   methodLabel.textContent = "신청방법";
-  const method = methodLines(document.createElement("dd"), item.method);
+  const method = renderMethod(document.createElement("dd"), item);
   info.append(methodLabel, method);
   if (item.notes.length) {
     const cautionLabel = document.createElement("dt");
@@ -271,6 +364,8 @@ function showList(updateRoute = true) {
     renderAttachments(block, [{ ...sourceFile, type: "pdf" }], "");
     list.appendChild(block);
   }
+  const calendar = data.calendars?.[state.type];
+  if (calendar && !state.category && !state.query) list.appendChild(renderCalendar(calendar));
   if (!items.length) {
     const empty = document.createElement("div");
     empty.className = "empty";
@@ -491,7 +586,7 @@ function renderPermission(item) {
   body.appendChild(sectionTitle("신청방법", "plain"));
   const process = document.createElement("div");
   process.className = "process-box";
-  methodLines(process, item.method);
+  renderMethod(process, item);
   body.appendChild(process);
   if (item.notes.length) {
     const notes = document.createElement("div");
